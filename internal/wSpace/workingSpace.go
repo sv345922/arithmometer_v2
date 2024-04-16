@@ -159,7 +159,7 @@ func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expres
 func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId *[]uint64) {
 	*nodesId = append(*nodesId, nodeId)
 	node, ok := ws.AllNodes[nodeId]
-	if node.Sheet || !ok {
+	if !ok || node.Sheet {
 		return
 	}
 

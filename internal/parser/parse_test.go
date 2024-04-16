@@ -27,7 +27,7 @@ var exprs = make([]*Expression, len(tests))
 func TestExpression(T *testing.T) {
 	for i, test := range tests {
 		expr := NewExpression()
-		err := expr.Do(test.input)
+		err := expr.Parse(test.input)
 		//fmt.Println(expr.Id)
 		exprs[i] = expr
 		if !errors.Is(err, test.err) || expr.Id != test.id {

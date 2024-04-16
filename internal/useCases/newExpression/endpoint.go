@@ -1,10 +1,12 @@
 package newExpression
 
 import (
-	"arithmometer/internal/parser"
-	"arithmometer/internal/wSpace"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/parser"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
 )
@@ -12,7 +14,7 @@ import (
 // Длительность по умолчанию
 
 // Обработчик создания нового выражения
-func NewExpression(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
+func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Проверить что это запрос POST
 		if r.Method != http.MethodPost {
@@ -36,13 +38,87 @@ func NewExpression(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.
 		// Парсим выражение, и проверяем его
 		// Предполагается, что если парсинг с ошибкой, значит невалидное выражение
 		newExpression := parser.NewExpression()
-		err = newExpression.Do(newClientExpression.Expression, *newClientExpression.Timings)
+
+		err = newExpression.Parse(newClientExpression.Expression, *newClientExpression.Timings)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("invalid expression"))
 			return
 		}
+		// Добавляем новое выражение в WorkingSpace
+		// создаем транзакцию
+		tx, err := ws.DB.BeginTx(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+		// Добавляем в AllNodes
+		err, tx = ws.AddToAllNodes(ctx, tx, newExpression.Nodes)
+		if err != nil {
+			log.Printf("add to all nodes failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("expression does not accepted"))
+			_ = tx.Rollback()
+			return
+		}
+		// Добавляем в Expressions
+		newExpression.Id, err = ws.AddToExpressions(ctx, tx, TransformParseExpression(newExpression))
+		if err != nil {
+			log.Printf("add to expressions failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("expression does not accepted"))
+			tx.Rollback()
+			return
+		}
+		// Установить id выражения в узлы
+		for _, node := range newExpression.Nodes {
+			node.ExpressionId = newExpression.Id
+		}
+		// Получаем список преобразованных узлов
+		nodes := make([]*entities.Node, len(newExpression.Nodes))
+		for i, node := range newExpression.Nodes {
+			nodes[i] = parser.TransformNode(node)
+		}
+
+		// Добавляем в очередь
+		err = ws.Queue.AddExpressionNodes(ctx, tx, nodes)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("expression does not accepted"))
+			tx.Rollback()
+			return
+		}
+
+		// Обновляем поле expressionID в node в таблице AllNodes
+		for _, node := range nodes {
+			_, err = tx.ExecContext(ctx,
+				`UPDATE allNodes SET expressionId = $1 WHERE id = $2;`,
+				node.ExpressionId,
+				node.Id,
+			)
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("expression does not accepted"))
+				tx.Rollback()
+				return
+			}
+		}
+		// обновляем тайминги
+		err = updateTimings(ctx, tx, newClientExpression.Timings)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("expression does not accepted"))
+			tx.Rollback()
+			return
+		}
+
+		// Завершаем транзакцию
+		tx.Commit()
+		// Записываем в тело ответа id выражения
+		w.Write([]byte(fmt.Sprintf("%d", newExpression.Id)))
 
 		log.Printf("Method: %s, Expression: %s, Timings: %s, id: %d",
 			r.Method,
@@ -50,31 +126,5 @@ func NewExpression(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.
 			newExpression.Times.String(),
 			newExpression.Id,
 		)
-		// Добавляем новое выражение в WorkingSpace
-		// Добавляем в Expressions
-		err = ws.AddToExpressions(TransformParseExpression(newExpression))
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("expression is already exist"))
-			return
-		}
-		// Добавляем в AllNodes
-		_, err = ws.AddToAllNodes(newExpression.Nodes)
-		if err != nil {
-			log.Println(err)
-		}
-		// Добавляем в очередь
-		_ = ws.Queue.AddExpressionNodes(newExpression.Nodes)
-
-		// Записываем тело ответа в виде id выражения
-		body := fmt.Sprintf("%d", newExpression.Id)
-		w.Write([]byte(body))
-
-		//Сохраняем ws
-		err = ws.Save()
-		if err != nil {
-			log.Println(err)
-		}
 	}
 }

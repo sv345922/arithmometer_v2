@@ -1,10 +1,13 @@
 package wSpace
 
 import (
-	"arithmometer/internal/dataBase"
-	"arithmometer/internal/entities"
-	"arithmometer/internal/taskQueue"
+	"context"
+	"database/sql"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/dataBase"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/parser"
+	"github.com/sv345922/arithmometer_v2/internal/taskQueue"
 	"log"
 	"sync"
 )
@@ -14,20 +17,27 @@ type WorkingSpace struct {
 	Expressions map[uint64]*entities.Expression `json:"expressions"`
 	AllNodes    map[uint64]*entities.Node       `json:"allnodes"`
 	Timings     *entities.Timings               `json:"timings"`
+	DB          *sql.DB
+	Users       map[uint64]*entities.User
 	Mu          sync.RWMutex
 }
 
-func NewWorkingSpace() *WorkingSpace {
+func NewWorkingSpace(db *sql.DB) *WorkingSpace {
 	ws := new(WorkingSpace)
 	ws.Queue = taskQueue.NewQueue()
 	expressions := make(map[uint64]*entities.Expression)
 	ws.Expressions = expressions
 	allNodes := make(map[uint64]*entities.Node)
 	ws.AllNodes = allNodes
+	ws.DB = db
+	users := make(map[uint64]*entities.User)
+	ws.Users = users
 	return ws
 }
 
 // Сохраняет рабочее пространство
+// TODO не будет использоваться
+
 func (ws *WorkingSpace) Save() error {
 	ws.Mu.RLock()
 	// Создаем и заполняем структуру базы данных для сохранения
@@ -36,11 +46,33 @@ func (ws *WorkingSpace) Save() error {
 	// заполняем тайминги
 	db.Timings = ws.Timings
 	// заполняем очередь задач
-	db.Queue = ws.Queue
+	for _, task := range ws.Queue.AllTasks {
+		dTask := entities.Task{
+			NodeId:   task.Node.Id,
+			X:        task.X,
+			XReady:   task.XReady,
+			Y:        task.Y,
+			YReady:   task.YReady,
+			CalcId:   task.CalcId,
+			Deadline: task.Deadline,
+			Duration: task.Duration,
+		}
+		db.Tasks = append(db.Tasks, &dTask)
+	}
+
 	// заполняем список выражений
-	db.Expressions = ws.Expressions
+	for _, expression := range ws.Expressions {
+		db.Expressions = append(db.Expressions, expression)
+	}
+
 	// заполняем AllNodes
-	db.AllNodes = ws.AllNodes
+	for _, node := range ws.AllNodes {
+		db.AllNodes = append(db.AllNodes, node)
+	}
+	// заполняем Users
+	for _, user := range ws.Users {
+		db.Users = append(db.Users, user)
+	}
 
 	ws.Mu.RUnlock()
 	err := db.Save()
@@ -54,30 +86,53 @@ func (ws *WorkingSpace) Save() error {
 // Добавляет новое выражение в структуры,
 // обновляет мапу узлов
 // обновляет очередь вычислений
-func (ws *WorkingSpace) AddToExpressions(expression *entities.Expression) error {
-	// добавляем выражение в список выражений
-	id := expression.Id
-	// Если выражение с таким id есть возвращаем ошибку
-	if _, ok := ws.Expressions[id]; ok {
-		return fmt.Errorf("expression already exists")
+func (ws *WorkingSpace) AddToExpressions(ctx context.Context, tx *sql.Tx, expression *entities.Expression) (uint64, error) {
+	// Сохраняем выражение в БД с получением его id
+	id, err := InsertExpression(ctx, tx, expression)
+	if err != nil {
+		return 0, fmt.Errorf("cannot add expression: %w", err)
 	}
+	// добавляем выражение в список выражений
+	expression.Id = id
+
 	// Добавляем выражение в мапу выражений
 	ws.Expressions[expression.Id] = expression
 
-	return nil
+	return id, nil
 }
-func (ws *WorkingSpace) AddToAllNodes(nodes []*entities.Node) (int, error) {
-	n := 0
+
+// Добавляем в allNodes узлы выражения, с сохранением в БД и присвоением id
+func (ws *WorkingSpace) AddToAllNodes(ctx context.Context, tx *sql.Tx, parseNodes []*parser.Node) (error, *sql.Tx) {
+	// записать в БД и получить id
+	tx, err := ws.DB.BeginTx(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
+	for _, parseNode := range parseNodes {
+		node := parser.TransformNode(parseNode)
+		id, err := InsertNode(ctx, tx, node)
+		if err != nil {
+			return fmt.Errorf("cannot save node: %w", err), tx
+		}
+		parseNode.NodeId = id
+	}
+	// список узлов с установленными id связей
+	nodes := make([]*entities.Node, 0, len(parseNodes))
+	// записать в ws
+	for _, parseNode := range parseNodes {
+		node := parser.TransformNode(parseNode)
+		ws.AllNodes[node.Id] = node
+		nodes = append(nodes, node)
+	}
+	// обновить ссылочные поля в БД
 	for _, node := range nodes {
-		if _, ok := ws.AllNodes[node.Id]; !ok {
-			ws.AllNodes[node.Id] = node
-			n++
+		err = UpdateNode(ctx, tx, node)
+		if err != nil {
+			return fmt.Errorf("cannot update node: %w", err), tx
 		}
 	}
-	if n != len(nodes) {
-		return n, fmt.Errorf("some nodes are exist")
-	}
-	return n, nil
+
+	return nil, tx
 }
 
 // Возвращает корень узла и выражение с этим корнем
@@ -95,8 +150,8 @@ func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expres
 }
 
 // Возвращает список id узлов выражения по id корня
-func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId []uint64) {
-	nodesId = append(nodesId, nodeId)
+func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId *[]uint64) {
+	*nodesId = append(*nodesId, nodeId)
 	node, ok := ws.AllNodes[nodeId]
 	if node.Sheet || !ok {
 		return
@@ -107,182 +162,54 @@ func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId []uint64) {
 }
 
 // Загружает структуру из db и возвращает её
-func LoadDB() (*WorkingSpace, error) {
-	db := dataBase.NewDB()
-	err := db.Load()
-	if err != nil {
-		log.Println(err)
-	}
-
+func LoadDB(ctx context.Context, db *sql.DB) (*WorkingSpace, error) {
 	// Создаем рабочее пространство
-	ws := NewWorkingSpace()
+	ws := NewWorkingSpace(db)
+	dataBase := dataBase.NewDB()
+	err := dataBase.Load(ctx, db)
+	if err != nil {
+		//log.Println(err)
+		return ws, fmt.Errorf("load database: %w", err)
+	}
 	ws.Mu.Lock()
 	// заполняем поля
-	ws.Queue = db.Queue
-	ws.Expressions = db.Expressions
-	ws.AllNodes = db.AllNodes
-	ws.Timings = db.Timings
+	// Expressions
+	for _, expression := range dataBase.Expressions {
+		ws.Expressions[expression.Id] = expression
+	}
+	// AllNodes
+	for _, node := range dataBase.AllNodes {
+		ws.AllNodes[node.Id] = node
+	}
+	// Users
+	for _, user := range dataBase.Users {
+		ws.Users[user.ID] = user
+	}
+	//Queue
+	for _, dtask := range dataBase.Tasks {
+		node, ok := ws.AllNodes[dtask.NodeId]
+		if !ok {
+			return ws, fmt.Errorf("node %d not found", dtask.NodeId)
+		}
+		t := taskQueue.Task{
+			Node:     node,
+			X:        dtask.X,
+			XReady:   dtask.XReady,
+			Y:        dtask.Y,
+			YReady:   dtask.YReady,
+			CalcId:   dtask.CalcId,
+			Deadline: dtask.Deadline,
+			Duration: dtask.Duration,
+		}
+
+		ok = ws.Queue.AddTask(&t)
+		if !ok {
+			log.Printf("add task %d fail", dtask.NodeId)
+		}
+
+	}
+	// timings
+	ws.Timings = dataBase.Timings
 	ws.Mu.Unlock()
 	return ws, nil
 }
-
-// TODO Видимо надо удалить остальное
-
-//// TODO
-//// При получении выполненого задания,
-//// проверяет на наличие ошибки деления на ноль,
-//// Записывает результат в узел и изменяет статус на - вычислено
-//// Обновляет очередь задач.
-//// Проверяет список выражений и если оно вычислено, обновляет его статус.
-//// Добавляет новую задачу в начало очереди задач.
-//func (ws *WorkingSpace) UpdateTasks(IdTask uint64, answer *Answer) error {
-//	ws.Mu.RLock()
-//	// находим узел решенной задаче
-//	calculatedNode, ok := (*ws.AllNodes)[IdTask]
-//	ws.Mu.RUnlock()
-//	if !ok {
-//		return fmt.Errorf("узел в мапе активных узлов не найден")
-//	}
-//	// Проверка деления на ноль и обновление выражения
-//	// с удалением не требующих решения задач,
-//	// а также изменение статуса выражения
-//	if answer.Err != nil {
-//		ws.updateWhileZeroDiv(calculatedNode, answer.Err)
-//		return answer.Err
-//	}
-//	result := answer.Result
-//	// Удаляем задачу из очереди
-//	ws.Queue.RemoveTask(IdTask)
-//	// записываем результат вычисления в узел
-//	calculatedNode.Val = result
-//	calculatedNode.Calculated = true
-//
-//	// Проверяем родительский узел
-//	parent := calculatedNode.Parent
-//	// Если это корень выражения
-//	if parent == nil {
-//		// Обновляем результат выражения и его статус
-//		ws.Expressions.UpdateStatus(calculatedNode, "done", result)
-//		return nil
-//	}
-//	// проверка готовности родительского узла и добавление его в очередь задач
-//	for checkAndUpdateNodeToTasks(ws, parent) {
-//		if parent.Parent == nil {
-//			break
-//		}
-//		parent = parent.Parent
-//	}
-//	return nil
-//}
-//
-//// TODO - не используется
-//// При поступлении нового выражения
-//// проходит по списку выражений, создает дерево узлов выражения,
-//// включает в рабочее пространство список узлов - ws.AllTask
-//// созадет очередь задач для вычислителей - ws.tasks
-//func (ws *WorkingSpace) Update() {
-//	//ws.mu.Lock()
-//	//defer ws.mu.Unlock()
-//	//// Взять выражения
-//	//// проверить на существование списка выражений
-//	//if ws.Expressions == nil {
-//	//	return
-//	//}
-//	////проходим по задачам
-//	//for _, expression := range ws.Expressions.ListExpr {
-//	//	// строим дерево выражения
-//	//	root, nodes, err := parsing.GetTree(expression.Postfix)
-//	//
-//	//	// Записываем в выражение ошибку, если она возникла при построении дерева
-//	//	// выражения
-//	//	if err != nil {
-//	//		expression.ParsError = err
-//	//		continue
-//	//	}
-//	//	// Создаем дерево задач
-//	//	for _, node := range *nodes {
-//	//		// Создаем ID для узлов
-//	//		node.CreateId()
-//	//		// проверить наличие задачи в tasks
-//	//		// заполняем словарь узлами
-//	//		(*ws.AllTask)[node.Id] = node
-//	//		// Если узел не рассчитан и узла с таким ID нет в очереди задач
-//	//		if node.IsReadyToCalc() && !ws.Queue.isContent(node) {
-//	//			// добавляем его в таски
-//	//			ws.Queue.AddTask(&TaskContainer{
-//	//				IdTask:   node.Id,
-//	//				TaskAn:    Task{X: node.X.Val, Y: node.Y.Val, Op: node.Op},
-//	//				Deadline: time.Now().Add(time.Hour * 1000),
-//	//				TimingsN: expression.Times,
-//	//			})
-//	//		}
-//	//	}
-//	//	expression.RootId = root.Id
-//	//}
-//}
-//
-//// Проходит дерево выражения от корня и создает список узлов выражения - удалить
-////func GetNodes(root *parsing.NodeDB, nodes *[]*parsing.NodeDB) []*parsing.NodeDB {
-////	nodes = append(nodes, root)
-////	if root.Sheet {
-////		return nodes
-////	}
-////	nodes = GetNodes(root.X, nodes)
-////	nodes = GetNodes(root.Y, nodes)
-////	return nodes
-////}
-//
-//// Проверяет на готовность узел, при готовности добавляет его в очередь задач
-//// TODO проверить, возможно отсюда идет ошибка очереди
-//func checkAndUpdateNodeToTasks(ws *WorkingSpace, node *treeExpression.Node) bool {
-//	// Если x и y вычислены
-//	if node.X.IsCalculated() && node.Y.IsCalculated() {
-//		// создаем задачу и кладем её в очередь
-//		task := &wSpace.TaskContainer{
-//			IdTask: node.Id,
-//			TaskAn: wSpace.Task{
-//				X:  node.X.Val,
-//				Y:  node.Y.Val,
-//				Op: node.Op,
-//			},
-//			Err:      nil,
-//			TimingsN: *ws.Timings,
-//		}
-//		ws.Queue.AddTask(task)
-//		return true
-//	}
-//	return false
-//}
-//
-//// Обновляет рабочее пространство при обнаружении деления на ноль,
-//// проверяет узлы в дереве выражения и обновляет их
-//func (ws *WorkingSpace) updateWhileZeroDiv(node *treeExpression.Node, err error) {
-//	log.Println("в выражении присутствует деление на ноль")
-//	err = fmt.Errorf(err.Error() + "in Expression")
-//	// находим кореневой узел выражения
-//	root := node.Parent
-//	for ; root != nil; root = node.Parent {
-//	}
-//	// Изменяем статус выражения с ошибкой
-//	ws.Expressions.UpdateStatus(root, err.Error(), 0)
-//
-//	//Удаляем узлы выражения из очереди и мапы узлов
-//	ws.removeCalculatedNodes(root)
-//}
-//
-//// Удаляем узлы выражения из очереди и мапы узлов по корневому узлу
-//func (ws *WorkingSpace) removeCalculatedNodes(node *treeExpression.Node) {
-//	ws.Mu.RLock()
-//	defer ws.Mu.RUnlock()
-//	for node.X != nil {
-//		ws.removeCalculatedNodes(node.X)
-//	}
-//	for node.Y != nil {
-//		ws.removeCalculatedNodes(node.Y)
-//	}
-//	ws.Mu.Lock()
-//	delete(*ws.AllNodes, node.Id)
-//	ws.Mu.Unlock()
-//	ws.Queue.RemoveTask(node.Id)
-//}
-//

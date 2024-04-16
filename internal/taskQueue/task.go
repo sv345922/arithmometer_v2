@@ -1,7 +1,8 @@
 package taskQueue
 
 import (
-	"arithmometer/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"sync"
 	"time"
 )
@@ -15,7 +16,7 @@ type Task struct {
 	Error    error          `json:"error"`    // ошибка
 	CalcId   uint64         `json:"calc_id"`  // id вычислителя задачи
 	Deadline time.Time      `json:"deadline"` // дедлайн задачи
-	Duration time.Duration  `json:"duration"` // длительность операции
+	Duration int            `json:"duration"` // длительность операции в условных единицах из конфига
 	mu       sync.RWMutex
 }
 
@@ -32,6 +33,8 @@ func (t *Task) GetID() uint64 {
 
 // SetCalc Присваивает id вычислителя
 func (t *Task) SetCalc(calcId uint64) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	t.CalcId = calcId
 }
 
@@ -58,13 +61,14 @@ func (t *Task) IsReadyToCalc() bool {
 }
 
 // SetDeadline устанавливает дедлайн задаче от текущего момента
-func (t *Task) SetDeadline(add time.Duration) {
+func (t *Task) SetDeadline(add int) {
 	t.mu.Lock()
-	t.Deadline = time.Now().Add(add)
+	t.Deadline = time.Now().Add(time.Duration(add) * configs.TConst)
 	t.mu.Unlock()
 }
 
-func (t *Task) SetDuration(duration time.Duration) {
+// TODO не используется
+func (t *Task) SetDuration(duration int) {
 	t.mu.Lock()
 	t.Duration = duration
 	t.mu.Unlock()

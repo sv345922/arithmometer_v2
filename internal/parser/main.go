@@ -1,24 +1,26 @@
 package parser
 
 import (
-	"arithmometer/internal/entities"
 	"errors"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 )
 
 type Expression struct {
 	entities.Expression
-	Postfix []*Symbol        `json:"postfix"` // Постфиксная запись выражения
-	Times   entities.Timings `json:"times"`   // Тайминги
-	Root    *entities.Node   `json:"root"`    // Корень дерева выражения
-	Nodes   []*entities.Node `json:"nodes"`   // Узлы выражения
+	ParsError error            `json:"parsError"`
+	Postfix   []*Symbol        `json:"postfix"` // Постфиксная запись выражения
+	Times     entities.Timings `json:"times"`   // Тайминги
+	Root      *Node            `json:"root"`    // Корень дерева выражения
+	Nodes     []*Node          `json:"nodes"`   // Узлы выражения
 }
 
 func NewExpression() *Expression {
 	return &Expression{}
 }
 
-// Парсит выражения и заполняет поля структуры Expression, возвращает обшибку
-func (e *Expression) Do(expr string, t entities.Timings) error {
+// Парсит выражения и заполняет поля структуры Expression, возвращает ошибку
+// не заполнятся поля ID
+func (e *Expression) Parse(expr string, t entities.Timings) error {
 	e.UserTask = expr
 	e.Times = t
 	// получаем корректные символы выражения
@@ -40,13 +42,13 @@ func (e *Expression) Do(expr string, t entities.Timings) error {
 	// записываем поля Root, Nodes
 	e.Root, e.Nodes, err = GetTree(e.Postfix)
 	// создаем идентификатор выражения
-	e.SetID()
+	//e.SetID()
 	if err != nil {
 		e.ParsError = errors.Join(e.ParsError, err)
 		return err
 	}
 	// записываем идентификатор корня выражения
-	e.RootId = e.Root.Id
+	//e.RootId = e.Root.Id
 	return nil
 }
 func (e *Expression) SetID() {

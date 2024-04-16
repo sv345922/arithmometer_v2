@@ -1,10 +1,10 @@
 package giveAnswer
 
 import (
-	"arithmometer/internal/entities"
-	"arithmometer/internal/wSpace"
+	"context"
 	"encoding/json"
-	"errors"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
 )
@@ -12,7 +12,7 @@ import (
 // var ZeroDiv = errors.New("zero division")
 
 // Обработчик, принимает от вычислителя ответ
-func GiveAnswer(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
+func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Проверить что это метод POST
 		if r.Method != http.MethodPost {
@@ -30,19 +30,40 @@ func GiveAnswer(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Req
 			log.Println("ошибка json при обработке ответа вычислителя")
 			return
 		}
-		log.Println("Получен ответ от вычислителя", container.Result)
-		// парсим id задачи в виде uint64
+		log.Printf("Получен ответ от вычислителя %f, ошибка %s\n",
+			container.Result,
+			container.Err,
+		)
+		// получаем id задачи
 		id := container.Id
 		// Если деление на ноль
-		if errors.Is(container.Err, entities.ZeroDiv) {
+		if container.Err == "zero division" {
 			// найти корень выражения и внести ошибку деления на ноль
 			root, expression := ws.GetRoot(id)
 			expression.Status = "zero division"
-			// удалить все узлы дерева выражения
-			nodesId := make([]uint64, 0)
-			ws.GetExpressionNodesID(root.Id, nodesId)
 
+			// получить все узлы выражения
+			nodesId := make([]uint64, 0)
+			ws.GetExpressionNodesID(root.Id, &nodesId)
+
+			// удалить все узлы дерева выражения
+			// и из очереди задач
+			for _, nodeId := range nodesId {
+				// Удаляем из БД записи узлов
+				err = DeleteNodeTask(ctx, ws.DB, nodeId)
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+				ws.Mu.Lock()
+				delete(ws.AllNodes, nodeId)
+				ws.Mu.Unlock()
+				ws.Queue.RemoveTask(nodeId)
+			}
+			w.WriteHeader(http.StatusOK)
+			return
 		}
+
 		// Обновляем очередь задач с учетом выполненной задачи и заносим результат вычисления
 		rootFlag, err := ws.Queue.AddAnswer(id, container.Result)
 		if err != nil {
@@ -51,14 +72,43 @@ func GiveAnswer(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Req
 		// Если вычислен корень выражения
 		// обновим выражение и запишем результат
 		if rootFlag {
-			for _, expr := range ws.Expressions {
-				if expr.RootId == id {
-					expr.Result = container.Result
+			// TODO возможно двойные ифы не нужны?
+			// удаляем все узлы выражения из очереди и из allNodes
+			// обновляем статус выражения
+			if node, ok := ws.AllNodes[id]; ok {
+				if expr, ok := ws.Expressions[node.ExpressionId]; ok {
 					expr.Status = "done"
+					expr.ResultExpr = container.Result
+
+					// TODO обновить expressions
 				}
+			}
+			// получить все узлы выражения
+			nodesId := make([]uint64, 0)
+			ws.GetExpressionNodesID(id, &nodesId)
+
+			// удалить все узлы дерева выражения
+			// и из очереди задач
+			for _, nodeId := range nodesId {
+				// Удаляем из БД записи узлов
+				err = DeleteNodeTask(ctx, ws.DB, nodeId)
+				if err != nil {
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+				ws.Mu.Lock()
+				delete(ws.AllNodes, nodeId)
+				ws.Mu.Unlock()
+				ws.Queue.RemoveTask(nodeId)
+			}
+
+		} else {
+			// Удаляем решенную задачу из БД
+			err = DeleteNodeTask(ctx, ws.DB, id)
+			if err != nil {
+				log.Println(err)
 			}
 		}
 		w.WriteHeader(http.StatusOK)
-		ws.Save()
 	}
 }

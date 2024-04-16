@@ -1,7 +1,8 @@
 package calculator
 
 import (
-	"arithmometer/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
 	"time"
 )
@@ -20,22 +21,22 @@ func Do(c *entities.MessageTask) (float64, error) {
 	switch Op {
 	case "+":
 		t := time.Duration(timings.Plus)
-		time.Sleep(time.Second * t)
+		time.Sleep(configs.TConst * t)
 		return x + y, nil
 	case "-":
 		t := time.Duration(timings.Minus)
-		time.Sleep(time.Second * t)
+		time.Sleep(configs.TConst * t)
 		return x - y, nil
 	case "*":
 		t := time.Duration(timings.Mult)
-		time.Sleep(time.Second * t)
+		time.Sleep(configs.TConst * t)
 		return x * y, nil
 	case "/":
 		if y == 0 {
 			return 0, zeroDiv
 		}
 		t := time.Duration(timings.Div)
-		time.Sleep(time.Second * t)
+		time.Sleep(configs.TConst * t)
 		return x / y, nil
 	default:
 		return 0, OpEr

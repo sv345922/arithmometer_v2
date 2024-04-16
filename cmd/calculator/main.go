@@ -1,12 +1,12 @@
 package main
 
 import (
-	"arithmometer/internal/calculator"
-	"arithmometer/internal/configs"
-	"arithmometer/internal/entities"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/calculator"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"io"
 	"log"
 	"net/http"
@@ -82,18 +82,24 @@ func main() {
 		// запускаем задачу в горутине
 		go func(container *entities.MessageTask) {
 			res, err := calculator.Do(container)
+			errString := "nil"
+			if err != nil {
+				errString = err.Error()
+			}
 			result <- entities.MessageResult{
 				Id:     container.Id,
 				Result: res,
-				Err:    err,
+				Err:    errString,
 			}
 		}(container)
 		answer := <-result
-		log.Printf("задача %.3f%s%.3f выполнена, результат %f\n",
+		log.Printf("задача %.3f%s%.3f выполнена, результат %f, ошибка %s\n",
 			container.X,
 			container.Op,
 			container.Y,
-			answer.Result)
+			answer.Result,
+			answer.Err,
+		)
 		// отправляем ответ, до тех пор пока он не будет принят
 		for {
 			err = SendAnswer(answer)

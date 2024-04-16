@@ -1,16 +1,17 @@
 package getTask
 
 import (
-	"arithmometer/internal/entities"
-	"arithmometer/internal/wSpace"
+	"context"
 	"encoding/json"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 // Даёт задачу калькулятору
-func GetTask(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
+func GetTask(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Проверить метод
 		if r.Method != http.MethodGet {
@@ -32,9 +33,9 @@ func GetTask(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Reques
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// Обновляем очередь задач, чтобы убрать дедлайны у просроченных
+		// TODO (элементы очереди) Обновляем очередь задач, чтобы обработать просроченные
 		ws.Queue.CheckDeadlines()
-		// Получаем задачу из очереди
+		// TODO (элементы очереди) Получаем задачу из очереди
 		task := ws.Queue.GetTask()
 
 		if task == nil {
@@ -50,9 +51,11 @@ func GetTask(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Reques
 		// Устанавливаем дедлайн для задачи
 		timeout := task.Duration * 15 / 10
 		task.SetDeadline(timeout)
-
-		// Сохраняем БД
-		ws.Save()
+		// обновляем поля в БД
+		err = UpdateInGetTask(ctx, ws.DB, task)
+		if err != nil {
+			log.Printf("%v", err)
+		}
 
 		// Создаем структуру для передачи вычислителю
 		container := entities.MessageTask{
@@ -66,6 +69,6 @@ func GetTask(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Reques
 		data, _ := json.Marshal(&container) //ошибку пропускаем
 		// и записываем в ответ вычислителю
 		w.Write(data)
-		log.Printf("calc %d, задача %f%s%f", task.CalcId, task.X, task.Node.Op, task.Y)
+		log.Printf("calc %d, задача %.3f%s%.3f", task.CalcId, task.X, task.Node.Op, task.Y)
 	}
 }

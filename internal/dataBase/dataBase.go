@@ -1,28 +1,35 @@
 package dataBase
 
 import (
-	"arithmometer/internal/configs"
-	"arithmometer/internal/entities"
-	"arithmometer/internal/taskQueue"
+	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
 	"os"
 )
 
+// структура для взаимождействия с базой данных sql
 type DataBase struct {
 	// список выражений (с таймингами)
-	Queue       *taskQueue.Queue                `json:"tasks"`
-	Expressions map[uint64]*entities.Expression `json:"expressions"` // []Expression
-	AllNodes    map[uint64]*entities.Node       `json:"allNodes"`
-	Timings     *entities.Timings               `json:"timings"`
+	Tasks       []*entities.Task       `json:"tasks"`
+	Expressions []*entities.Expression `json:"expressions"` // []Expression
+	AllNodes    []*entities.Node       `json:"allNodes"`
+	Timings     *entities.Timings      `json:"timings"`
+	Users       []*entities.User       `json:"users"`
 }
 
+// Возвращает новый экземпляр структуры
 func NewDB() *DataBase {
 	db := DataBase{
-		Queue:       taskQueue.NewQueue(),
-		Expressions: make(map[uint64]*entities.Expression),
-		AllNodes:    make(map[uint64]*entities.Node),
+		Tasks:       make([]*entities.Task, 0),
+		Expressions: make([]*entities.Expression, 0),
+		AllNodes:    make([]*entities.Node, 0),
 		Timings:     &entities.Timings{},
+		Users:       make([]*entities.User, 0),
 	}
 	return &db
 }
@@ -39,27 +46,6 @@ func (db *DataBase) Save() error {
 	}
 	path := wd + "/db/" + configs.NameDataBase + ".json"
 	err = os.WriteFile(path, jsonBytes, 0666)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
-// Загружает в пустую структуру DataBase сохраненные данные
-func (db *DataBase) Load() error {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	path := wd + "/db/" + configs.NameDataBase + ".json"
-	data, err := os.ReadFile(path)
-	if err != nil {
-		log.Println("ошибка открытия json", err)
-		return err
-	}
-	err = json.Unmarshal(data, &db)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -88,12 +74,70 @@ func SafeJSON(name string, dataBase *DataBase) error {
 	return nil
 }
 
-// CreateEmptyDb Cоздает файл пустой БД
-func CreateEmptyDb() error {
+// Cоздает файл пустой БД
+func CreateEmptyDb_v1() error {
 	// Создаем файл с пустой БД
 	err := SafeJSON(configs.NameDataBase, NewDB())
 	if err != nil {
 		log.Println("Ошибка создания пустой БД")
 	}
 	return nil
+}
+
+// Проверяет существование файла базы данных, и если он существует удаляет его,
+// затем вызывает CreateDb
+func CreateEmptyDb(ctx context.Context) (*sql.DB, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	path := wd + configs.DBPath
+	ok, err := IsFileExist(path)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		// удаляем файл
+		err = os.Remove(path)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return CreateDb(ctx)
+}
+
+// Проверяет файл на существование
+func IsFileExist(path string) (found bool, err error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		}
+	} else {
+		found = true
+	}
+	return
+}
+
+// Создает подключение базы данных, при отсутсвии таблиц сождает новые
+func CreateDb(ctx context.Context) (*sql.DB, error) {
+	// Создаем файл с пустой БД
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("getWD: %w", err)
+	}
+	path := wd + configs.DBPath
+	//fmt.Println("PATH=", path)
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		return nil, fmt.Errorf("sql open: %w", err)
+	}
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ping db: %w", err)
+	}
+	if err = CreateTables(ctx, db); err != nil {
+		return nil, fmt.Errorf("createTables: %w", err)
+	}
+	return db, nil
 }

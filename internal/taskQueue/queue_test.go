@@ -2,8 +2,8 @@
 package taskQueue
 
 import (
-	"arithmometer/internal/entities"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"testing"
 	"time"
 )
@@ -56,8 +56,8 @@ func TestQueue_GetTask(t *testing.T) {
 		t.Errorf("invalid counter while addTask")
 	}
 	fmt.Println(queue.Info())
-	result.SetDeadline(1 * time.Second)
-	result.SetDuration(2 * time.Second)
+	result.SetDeadline(1)
+	result.SetDuration(2)
 	queue.CheckDeadlines()
 	time.Sleep(2 * time.Second)
 	queue.CheckDeadlines()
@@ -90,7 +90,30 @@ func GetQoueue() *Queue {
 		&entities.Node{Id: 5, Sheet: false, X: 4, Y: 3, Op: "+"},
 	}
 	q := NewQueue()
-	q.AddExpressionNodes(nodes)
+	// Создаем словарь узлов
+	nodesMap := make(map[uint64]*entities.Node)
+	for _, node := range nodes {
+		nodesMap[node.Id] = node
+	}
+	for _, node := range nodes {
+		// Если узел лист==не оператор, то в задачи не попадает
+		if node.Sheet {
+			continue
+		}
+		task := NewTask(node)
+		// Если оператор X вычислен
+		if xNode, ok := nodesMap[node.X]; ok && xNode.Calculated {
+			task.X = xNode.Val
+			task.XReady = true
+		}
+		// Если оператор Y вычислен
+		if yNode, ok := nodesMap[node.Y]; ok && yNode.Calculated {
+			task.Y = yNode.Val
+			task.YReady = true
+		}
+		// Добавляем в очередь
+		_ = q.AddTask(task)
+	}
 	return q
 }
 

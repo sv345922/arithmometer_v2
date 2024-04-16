@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"arithmometer/internal/entities"
-	"arithmometer/internal/stack"
 	"errors"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/stack"
 	"strconv"
 	"strings"
 	"text/scanner"
@@ -122,7 +122,7 @@ func GetPostfix(input []*Symbol) ([]*Symbol, error) {
 
 // GetTree Строит дерево выражения и возвращает корневой узел и список узлов
 // из постфиксного выражения
-func GetTree(postfix []*Symbol) (*entities.Node, []*entities.Node, error) {
+func GetTree(postfix []*Symbol) (*Node, []*Node, error) {
 	if len(postfix) == 0 {
 		return nil, nil, errors.Join(entities.ErrExpression, fmt.Errorf("expression is empty"))
 	}
@@ -163,17 +163,19 @@ func GetTree(postfix []*Symbol) (*entities.Node, []*entities.Node, error) {
 	root := stack.Top()
 	nodes := make([]*Node, 0)
 	GetNodesOfExpression(root, &nodes)
-	rootOut := TransformNode(root)
-	nodesOut := make([]*entities.Node, len(nodes))
-	for i, value := range nodes {
-		nodesOut[i] = TransformNode(value)
-	}
-	return rootOut, nodesOut, nil
+	/*
+		rootOut := TransformNode(root)
+		nodesOut := make([]*entities.Node, len(nodes))
+		for i, value := range nodes {
+			nodesOut[i] = TransformNode(value)
+		}
+	*/
+	return root, nodes, nil
 }
 
 // Проходит дерево выражения от корня и создает список узлов выражения
 func GetNodesOfExpression(node *Node, nodes *[]*Node) {
-	node.CreateId()
+	// node.CreateId() // id узла создается при сохранении в базе данных
 	//fmt.Printf("created ID=%d for node: %v\n", node.Id, node)
 	*nodes = append(*nodes, node)
 	if node.Sheet {
@@ -196,15 +198,15 @@ func TransformNode(node *Node) *entities.Node {
 	if node.Parent != nil {
 		parent = node.Parent.NodeId
 	}
-	result := &entities.Node{
-		Id:         node.NodeId,
-		Op:         node.Op,
-		X:          x,
-		Y:          y,
-		Val:        node.Val,
-		Sheet:      node.Sheet,
-		Calculated: node.Calculated,
-		Parent:     parent,
+	return &entities.Node{
+		Id:           node.NodeId,
+		ExpressionId: node.ExpressionId,
+		Op:           node.Op,
+		X:            x,
+		Y:            y,
+		Val:          node.Val,
+		Sheet:        node.Sheet,
+		Calculated:   node.Calculated,
+		Parent:       parent,
 	}
-	return result
 }

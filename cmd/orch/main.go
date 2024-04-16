@@ -1,9 +1,11 @@
 package main
 
 import (
-	"arithmometer/internal/app"
-	"arithmometer/internal/dataBase"
-	"arithmometer/internal/wSpace"
+	"context"
+	"database/sql"
+	"github.com/sv345922/arithmometer_v2/internal/app"
+	"github.com/sv345922/arithmometer_v2/internal/dataBase"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"os"
 )
@@ -21,31 +23,41 @@ import (
 
 func main() {
 	// создать пустую базу
+	ctx := context.Background()
+	var dbase *sql.DB
+	var err error
 	if len(os.Args) > 1 {
 		if os.Args[1] == "new" {
-			err := dataBase.CreateEmptyDb()
+			dbase, err = dataBase.CreateEmptyDb(ctx)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
+	} else {
+		dbase, err = dataBase.CreateDb(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	defer dbase.Close()
 	// сделать список задач для вычисления
-	ws, err := RunTasker()
+	ws, err := RunTasker(ctx, dbase)
 	if err != nil {
-		log.Printf("main: %v", err)
+		log.Fatalf("main: %v", err)
 	}
-	err = app.RunServer(ws)
+	err = app.RunServer(ctx, ws)
 	log.Println(err)
 }
 
 // Создает рабочее пространство из сохраненной базы данных
-func RunTasker() (*wSpace.WorkingSpace, error) {
+func RunTasker(ctx context.Context, db *sql.DB) (*wSpace.WorkingSpace, error) {
 	// Восстанавливаем выражения и задачи из базы данных
 	// Загрузка сохраненной БД
-	ws, err := wSpace.LoadDB()
+	ws, err := wSpace.LoadDB(ctx, db)
 	if err != nil {
-		log.Println("ошибка загрузки БД", err)
+		// log.Println("ошибка загрузки БД", err)
 		return ws, err
 	}
+
 	return ws, err
 }

@@ -1,1 +1,764 @@
-{"tasks":{"allTasks":{},"readytocalc":[],"working":{"AllTask":{}},"notready":{"AllTask":{}},"l":0},"expressions":{"1056":{"id":1056,"userTask":"1 + 2 * 3 - 1","result":6,"status":"done","rootId":1632,"parsError":null},"1468":{"id":1468,"userTask":"-1+2-3/(4+5) * 6 -7 * 8","result":-57,"status":"done","rootId":4853,"parsError":null},"1570":{"id":1570,"userTask":"-1+2-3/(4+5) * 6 -7 * 8","result":-57,"status":"done","rootId":4853,"parsError":null},"1587":{"id":1587,"userTask":"(100/10+6)/4+ 5/3-4","result":1.666666666666667,"status":"done","rootId":3717,"parsError":null},"1725":{"id":1725,"userTask":"-1+2-3/(4+5) * 6 -7 * 8","result":-57,"status":"done","rootId":4853,"parsError":null},"1772":{"id":1772,"userTask":"-1+2-3/(4+5) * 6 -7 * 8","result":-57,"status":"done","rootId":4853,"parsError":null},"591":{"id":591,"userTask":"1 + 2 * 3 - 1","result":6,"status":"done","rootId":1632,"parsError":null}},"allNodes":{"1139":{"nodeId":1139,"op":"+","x":302,"y":697,"val":7,"sheet":false,"calculated":true,"parent":1632},"1150":{"nodeId":1150,"op":"/","x":304,"y":702,"val":0.3333333333333333,"sheet":false,"calculated":true,"parent":1645},"1353":{"nodeId":1353,"op":"+","x":885,"y":307,"val":16,"sheet":false,"calculated":true,"parent":1872},"1632":{"nodeId":1632,"op":"-","x":1139,"y":302,"val":6,"sheet":false,"calculated":true,"parent":0},"1645":{"nodeId":1645,"op":"*","x":1150,"y":307,"val":2,"sheet":false,"calculated":true,"parent":3416},"1872":{"nodeId":1872,"op":"/","x":1353,"y":305,"val":4,"sheet":false,"calculated":true,"parent":3053},"301":{"nodeId":301,"op":"","x":0,"y":0,"val":0,"sheet":true,"calculated":true,"parent":696},"302":{"nodeId":302,"op":"","x":0,"y":0,"val":1,"sheet":true,"calculated":true,"parent":1139},"303":{"nodeId":303,"op":"","x":0,"y":0,"val":2,"sheet":true,"calculated":true,"parent":697},"304":{"nodeId":304,"op":"","x":0,"y":0,"val":3,"sheet":true,"calculated":true,"parent":697},"305":{"nodeId":305,"op":"","x":0,"y":0,"val":4,"sheet":true,"calculated":true,"parent":1872},"3053":{"nodeId":3053,"op":"+","x":1872,"y":705,"val":5.666666666666667,"sheet":false,"calculated":true,"parent":3717},"306":{"nodeId":306,"op":"","x":0,"y":0,"val":5,"sheet":true,"calculated":true,"parent":705},"307":{"nodeId":307,"op":"","x":0,"y":0,"val":6,"sheet":true,"calculated":true,"parent":1353},"308":{"nodeId":308,"op":"","x":0,"y":0,"val":7,"sheet":true,"calculated":true,"parent":707},"309":{"nodeId":309,"op":"","x":0,"y":0,"val":8,"sheet":true,"calculated":true,"parent":707},"3416":{"nodeId":3416,"op":"-","x":1139,"y":1645,"val":-1,"sheet":false,"calculated":true,"parent":4853},"356":{"nodeId":356,"op":"","x":0,"y":0,"val":10,"sheet":true,"calculated":true,"parent":885},"3717":{"nodeId":3717,"op":"-","x":3053,"y":305,"val":1.666666666666667,"sheet":false,"calculated":true,"parent":0},"411":{"nodeId":411,"op":"","x":0,"y":0,"val":100,"sheet":true,"calculated":true,"parent":885},"4853":{"nodeId":4853,"op":"-","x":3416,"y":707,"val":-57,"sheet":false,"calculated":true,"parent":0},"696":{"nodeId":696,"op":"-","x":301,"y":302,"val":-1,"sheet":false,"calculated":true,"parent":1139},"697":{"nodeId":697,"op":"*","x":303,"y":304,"val":6,"sheet":false,"calculated":true,"parent":1139},"702":{"nodeId":702,"op":"+","x":305,"y":306,"val":9,"sheet":false,"calculated":true,"parent":1150},"705":{"nodeId":705,"op":"/","x":306,"y":304,"val":1.6666666666666667,"sheet":false,"calculated":true,"parent":3053},"707":{"nodeId":707,"op":"*","x":308,"y":309,"val":56,"sheet":false,"calculated":true,"parent":4853},"885":{"nodeId":885,"op":"/","x":411,"y":356,"val":10,"sheet":false,"calculated":true,"parent":1353}},"timings":{"plus":1,"minus":1,"mult":1,"div":1}}
+{
+  "allNodes": [
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 37,
+      "op": "",
+      "parent": 31,
+      "sheet": true,
+      "val": 6,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 0,
+      "nodeId": 45,
+      "op": "",
+      "parent": 44,
+      "sheet": true,
+      "val": 1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 0,
+      "nodeId": 49,
+      "op": "",
+      "parent": 43,
+      "sheet": true,
+      "val": 4,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 28,
+      "op": "",
+      "parent": 27,
+      "sheet": true,
+      "val": 0,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 33,
+      "op": "",
+      "parent": 32,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 24,
+      "op": "-",
+      "parent": 0,
+      "sheet": false,
+      "val": 0,
+      "x": 25,
+      "y": 38
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 30,
+      "op": "",
+      "parent": 26,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 34,
+      "op": "+",
+      "parent": 32,
+      "sheet": false,
+      "val": 9,
+      "x": 35,
+      "y": 36
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 38,
+      "op": "/",
+      "parent": 24,
+      "sheet": false,
+      "val": 0,
+      "x": 39,
+      "y": 42
+    },
+    {
+      "calculated": true,
+      "expressionId": 1,
+      "nodeId": 4,
+      "op": "",
+      "parent": 3,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 3,
+      "nodeId": 19,
+      "op": "-",
+      "parent": 11,
+      "sheet": false,
+      "val": 0,
+      "x": 20,
+      "y": 21
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 15,
+      "op": "",
+      "parent": 14,
+      "sheet": true,
+      "val": 1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 21,
+      "op": "*",
+      "parent": 19,
+      "sheet": false,
+      "val": 6,
+      "x": 22,
+      "y": 23
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 26,
+      "op": "+",
+      "parent": 25,
+      "sheet": false,
+      "val": 0,
+      "x": 27,
+      "y": 30
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 32,
+      "op": "/",
+      "parent": 31,
+      "sheet": false,
+      "val": 0,
+      "x": 33,
+      "y": 34
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 41,
+      "op": "",
+      "parent": 39,
+      "sheet": true,
+      "val": 8,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 2,
+      "nodeId": 8,
+      "op": "",
+      "parent": 7,
+      "sheet": true,
+      "val": 1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 3,
+      "nodeId": 12,
+      "op": "*",
+      "parent": 11,
+      "sheet": false,
+      "val": 0,
+      "x": 13,
+      "y": 18
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 23,
+      "op": "",
+      "parent": 21,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 36,
+      "op": "",
+      "parent": 34,
+      "sheet": true,
+      "val": 5,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 40,
+      "op": "",
+      "parent": 39,
+      "sheet": true,
+      "val": 7,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 1,
+      "nodeId": 3,
+      "op": "*",
+      "parent": 1,
+      "sheet": false,
+      "val": 6,
+      "x": 4,
+      "y": 5
+    },
+    {
+      "calculated": false,
+      "expressionId": 2,
+      "nodeId": 6,
+      "op": "*",
+      "parent": 0,
+      "sheet": false,
+      "val": 0,
+      "x": 7,
+      "y": 10
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 22,
+      "op": "",
+      "parent": 21,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 42,
+      "op": "",
+      "parent": 38,
+      "sheet": true,
+      "val": 0,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 0,
+      "nodeId": 43,
+      "op": "/",
+      "parent": 0,
+      "sheet": false,
+      "val": 0,
+      "x": 44,
+      "y": 49
+    },
+    {
+      "calculated": true,
+      "expressionId": 1,
+      "nodeId": 5,
+      "op": "",
+      "parent": 3,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 3,
+      "nodeId": 11,
+      "op": "/",
+      "parent": 0,
+      "sheet": false,
+      "val": 0,
+      "x": 12,
+      "y": 19
+    },
+    {
+      "calculated": false,
+      "expressionId": 3,
+      "nodeId": 13,
+      "op": "*",
+      "parent": 12,
+      "sheet": false,
+      "val": 0,
+      "x": 14,
+      "y": 17
+    },
+    {
+      "calculated": false,
+      "expressionId": 3,
+      "nodeId": 14,
+      "op": "+",
+      "parent": 13,
+      "sheet": false,
+      "val": 0,
+      "x": 15,
+      "y": 16
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 17,
+      "op": "",
+      "parent": 13,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 18,
+      "op": "",
+      "parent": 12,
+      "sheet": true,
+      "val": 100,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 31,
+      "op": "*",
+      "parent": 25,
+      "sheet": false,
+      "val": 0,
+      "x": 32,
+      "y": 37
+    },
+    {
+      "calculated": false,
+      "expressionId": 0,
+      "nodeId": 44,
+      "op": "+",
+      "parent": 43,
+      "sheet": false,
+      "val": 0,
+      "x": 45,
+      "y": 46
+    },
+    {
+      "calculated": false,
+      "expressionId": 1,
+      "nodeId": 1,
+      "op": "+",
+      "parent": 0,
+      "sheet": false,
+      "val": 0,
+      "x": 2,
+      "y": 3
+    },
+    {
+      "calculated": true,
+      "expressionId": 1,
+      "nodeId": 2,
+      "op": "",
+      "parent": 1,
+      "sheet": true,
+      "val": 1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 0,
+      "nodeId": 48,
+      "op": "",
+      "parent": 46,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 0,
+      "nodeId": 46,
+      "op": "*",
+      "parent": 44,
+      "sheet": false,
+      "val": 0,
+      "x": 47,
+      "y": 48
+    },
+    {
+      "calculated": true,
+      "expressionId": 0,
+      "nodeId": 47,
+      "op": "",
+      "parent": 46,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 25,
+      "op": "-",
+      "parent": 24,
+      "sheet": false,
+      "val": 0,
+      "x": 26,
+      "y": 31
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 27,
+      "op": "-",
+      "parent": 26,
+      "sheet": false,
+      "val": -1,
+      "x": 28,
+      "y": 29
+    },
+    {
+      "calculated": false,
+      "expressionId": 4,
+      "nodeId": 39,
+      "op": "*",
+      "parent": 38,
+      "sheet": false,
+      "val": 0,
+      "x": 40,
+      "y": 41
+    },
+    {
+      "calculated": false,
+      "expressionId": 2,
+      "nodeId": 7,
+      "op": "+",
+      "parent": 6,
+      "sheet": false,
+      "val": 0,
+      "x": 8,
+      "y": 9
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 20,
+      "op": "",
+      "parent": 19,
+      "sheet": true,
+      "val": 6,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 3,
+      "nodeId": 16,
+      "op": "",
+      "parent": 14,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 29,
+      "op": "",
+      "parent": 27,
+      "sheet": true,
+      "val": 1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 4,
+      "nodeId": 35,
+      "op": "",
+      "parent": 34,
+      "sheet": true,
+      "val": 4,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 2,
+      "nodeId": 9,
+      "op": "",
+      "parent": 7,
+      "sheet": true,
+      "val": 2,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "calculated": true,
+      "expressionId": 2,
+      "nodeId": 10,
+      "op": "",
+      "parent": 6,
+      "sheet": true,
+      "val": 3,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "expressions": [
+    {
+      "id": 1,
+      "result": 0,
+      "rootId": 1,
+      "status": "",
+      "userTask": "1 + 2 * 3",
+      "user_id": 0
+    },
+    {
+      "id": 2,
+      "result": 0,
+      "rootId": 6,
+      "status": "",
+      "userTask": "(1 + 2) * 3",
+      "user_id": 0
+    },
+    {
+      "id": 3,
+      "result": 0,
+      "rootId": 11,
+      "status": "",
+      "userTask": "(1 + 2) * 3 * 100 / (6 - 3 * 2)",
+      "user_id": 0
+    },
+    {
+      "id": 4,
+      "result": 0,
+      "rootId": 24,
+      "status": "",
+      "userTask": "-1+2-3/(4+5) * 6 -7 * 8 / 0",
+      "user_id": 0
+    },
+    {
+      "id": 5,
+      "result": 0,
+      "rootId": 43,
+      "status": "",
+      "userTask": "(1 + 2 * 3) / 4",
+      "user_id": 0
+    }
+  ],
+  "tasks": [
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:18.1887165+03:00",
+      "duration": 0,
+      "node_id": 6,
+      "x": 0,
+      "x_ready": false,
+      "y": 3,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:18.1892215+03:00",
+      "duration": 0,
+      "node_id": 7,
+      "x": 1,
+      "x_ready": true,
+      "y": 2,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 25,
+      "x": 0,
+      "x_ready": false,
+      "y": 0,
+      "y_ready": false
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:47.4359198+03:00",
+      "duration": 0,
+      "node_id": 11,
+      "x": 0,
+      "x_ready": false,
+      "y": 0,
+      "y_ready": false
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:47.4359198+03:00",
+      "duration": 0,
+      "node_id": 13,
+      "x": 0,
+      "x_ready": false,
+      "y": 3,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:47.4359198+03:00",
+      "duration": 0,
+      "node_id": 19,
+      "x": 6,
+      "x_ready": true,
+      "y": 6,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 31,
+      "x": 0,
+      "x_ready": false,
+      "y": 6,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 24,
+      "x": 0,
+      "x_ready": false,
+      "y": 0,
+      "y_ready": false
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:52:01.2144318+03:00",
+      "duration": 0,
+      "node_id": 43,
+      "x": 0,
+      "x_ready": false,
+      "y": 4,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 39,
+      "x": 7,
+      "x_ready": true,
+      "y": 8,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:52:01.2144318+03:00",
+      "duration": 0,
+      "node_id": 44,
+      "x": 1,
+      "x_ready": true,
+      "y": 6,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:11.6117035+03:00",
+      "duration": 0,
+      "node_id": 1,
+      "x": 1,
+      "x_ready": true,
+      "y": 6,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:47.4359198+03:00",
+      "duration": 0,
+      "node_id": 12,
+      "x": 0,
+      "x_ready": false,
+      "y": 100,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T13:55:47.4359198+03:00",
+      "duration": 0,
+      "node_id": 14,
+      "x": 1,
+      "x_ready": true,
+      "y": 2,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 26,
+      "x": -1,
+      "x_ready": true,
+      "y": 2,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 32,
+      "x": 3,
+      "x_ready": true,
+      "y": 9,
+      "y_ready": true
+    },
+    {
+      "calc_id": 0,
+      "deadline": "2024-05-27T14:30:24.7698336+03:00",
+      "duration": 0,
+      "node_id": 38,
+      "x": 0,
+      "x_ready": false,
+      "y": 0,
+      "y_ready": true
+    }
+  ],
+  "timings": {
+    "div": 3,
+    "minus": 3,
+    "mult": 3,
+    "plus": 3
+  },
+  "users": []
+}

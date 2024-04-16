@@ -1,7 +1,7 @@
 package timings
 
 import (
-	"arithmometer/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"testing"
 )
 

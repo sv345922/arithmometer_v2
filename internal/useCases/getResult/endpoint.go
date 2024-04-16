@@ -1,8 +1,8 @@
 package getResult
 
 import (
-	"arithmometer/internal/wSpace"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
 	"strconv"
@@ -21,14 +21,20 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 		// Читаем id из параметров запроса
 		id := r.URL.Query().Get("id")
 		if id == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("не найден id в запросе"))
-			log.Println("не найден id в запросе")
+			// при пустом ID возвращать все выражения (пользователя)
+			// TODO пока не USERS используется userID=0
+			result, err := GetExpressions(0, ws.Expressions)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(result))
+			log.Printf("отправлены все выражения пользователя %d", 0)
 			return
 		}
-		log.Println("Id запрошенного выражения =", id)
+		log.Println("Id выражения =", id)
 
-		// Обновление списка задач и выражений ?
+		// TODO реализовать проверку пользователя и его выражений
 
 		// преобразуем id в число
 		idInt, _ := strconv.ParseUint(id, 10, 64)
@@ -36,20 +42,20 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 		expression, ok := ws.Expressions[idInt]
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("id не найден"))
+			w.Write([]byte("id not found"))
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
 		switch expression.Status {
 		case "done":
-			w.Write([]byte(fmt.Sprintf("результат выражения %s = %f", expression.UserTask, expression.Result)))
+			w.Write([]byte(fmt.Sprintf("%s = %f", expression.UserTask, expression.ResultExpr)))
 			return
 		case "zero division":
-			w.Write([]byte(fmt.Sprintf("Выражение %s содержит ошибку деления на ноль", expression.UserTask)))
+			w.Write([]byte(fmt.Sprintf("%s = zero division error", expression.UserTask)))
 			return
 		default:
-			w.Write([]byte(fmt.Sprintf("выражение %s еще не посчитано", expression.UserTask)))
+			w.Write([]byte(fmt.Sprintf("%s ... calculating", expression.UserTask)))
 		}
 	}
 }

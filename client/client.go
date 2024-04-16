@@ -1,13 +1,13 @@
 package main
 
 import (
-	"arithmometer/internal/configs"
-	"arithmometer/internal/entities"
-	"arithmometer/internal/useCases/newExpression"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/newExpression"
 	"io"
 	"log"
 	"net/http"
@@ -17,7 +17,9 @@ import (
 )
 
 // Задача для вычисления
-var expr = "-1+2-3/(4+5) * 6 -7 * 8"
+var expr = "-1+2-3/(4+5) * 6 -7 * 8 / 0"
+
+// var expr = "2 / 0"
 
 func SendNewExpression(exprString string) (string, bool) {
 	// Создать запрос
@@ -83,7 +85,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for !strings.Contains(answer, "результат выражения") {
+	for !strings.Contains(answer, "=") {
 		time.Sleep(3 * time.Second)
 		_, answer, err = GetResult(id)
 	}

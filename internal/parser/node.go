@@ -6,14 +6,15 @@ import (
 
 // Node - узел выражения
 type Node struct {
-	NodeId     uint64  `json:"nodeId"`
-	Op         string  `json:"op"` // оператор
-	X          *Node   `json:"x"`
-	Y          *Node   `json:"y"`          // потомки
-	Val        float64 `json:"val"`        // значение узла
-	Sheet      bool    `json:"sheet"`      // флаг листа
-	Calculated bool    `json:"calculated"` // флаг вычисленного узла
-	Parent     *Node   `json:"parent"`     // узел родитель
+	NodeId       uint64  `json:"nodeId"`
+	ExpressionId uint64  `json:"expressionId"`
+	Op           string  `json:"op"` // оператор
+	X            *Node   `json:"x"`
+	Y            *Node   `json:"y"`          // потомки
+	Val          float64 `json:"val"`        // значение узла
+	Sheet        bool    `json:"sheet"`      // флаг листа
+	Calculated   bool    `json:"calculated"` // флаг вычисленного узла
+	Parent       *Node   `json:"parent"`     // узел родитель
 }
 
 // Возвращает тип узла

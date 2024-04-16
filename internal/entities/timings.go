@@ -1,9 +1,8 @@
 package entities
 
 import (
-	"arithmometer/internal/configs"
 	"fmt"
-	"time"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
 )
 
 var tConst = configs.TConst
@@ -23,17 +22,17 @@ func (t *Timings) String() string {
 
 // GetDuration Возвращает время выполнения конкретной операции
 // Если оператор неизвестен, возвращает нулевую длительность
-func (t *Timings) GetDuration(op string) time.Duration {
+func (t *Timings) GetDuration(op string) int {
 	switch op {
 	case "+":
-		return time.Duration(t.Plus) * tConst
+		return t.Plus
 	case "-":
-		return time.Duration(t.Minus) * tConst
+		return t.Minus
 	case "*":
-		return time.Duration(t.Mult) * tConst
+		return t.Mult
 	case "/":
-		return time.Duration(t.Div) * tConst
+		return t.Div
 	default:
-		return 0 * tConst
+		return 0
 	}
 }

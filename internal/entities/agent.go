@@ -3,7 +3,7 @@ package entities
 type MessageResult struct {
 	Id     uint64  `json:"id"`
 	Result float64 `json:"result"`
-	Err    error   `json:"err"`
+	Err    string  `json:"err"`
 }
 type MessageTask struct {
 	Id      uint64   `json:"id"`

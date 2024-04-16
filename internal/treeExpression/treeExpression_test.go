@@ -1,8 +1,8 @@
 package treeExpression
 
 import (
-	"arithmometer/internal/entities"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"testing"
 )
 

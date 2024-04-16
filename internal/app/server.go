@@ -1,30 +1,31 @@
 package app
 
 import (
-	"arithmometer/internal/configs"
-	"arithmometer/internal/useCases/getResult"
-	"arithmometer/internal/useCases/getTask"
-	"arithmometer/internal/useCases/giveAnswer"
-	"arithmometer/internal/useCases/newExpression"
-	"arithmometer/internal/wSpace"
+	"context"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/getResult"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/getTask"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/giveAnswer"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/newExpression"
+	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
 )
 
-func RunServer(ws *wSpace.WorkingSpace) error {
+func RunServer(ctx context.Context, ws *wSpace.WorkingSpace) error {
 	mux := http.NewServeMux()
 
 	// Дать ответ клиенту о результатах вычисления выражений
-	mux.HandleFunc("/getresult", getResult.GetResult(ws))
+	mux.HandleFunc("/getresult", getResult.GetResult(ws)) // TODO context?
 
 	// Получение нового выражения от клиента
-	mux.HandleFunc("/newexpression", newExpression.NewExpression(ws))
+	mux.HandleFunc("/newexpression", newExpression.NewExpression(ctx, ws))
 
 	// Дать задачу вычислителю
-	mux.HandleFunc("/gettask", getTask.GetTask(ws))
+	mux.HandleFunc("/gettask", getTask.GetTask(ctx, ws)) // TODO context
 
 	// Получить ответ от вычислителя
-	mux.HandleFunc("/giveanswer", giveAnswer.GiveAnswer(ws))
+	mux.HandleFunc("/giveanswer", giveAnswer.GiveAnswer(ctx, ws)) // TODO context
 
 	log.Println("Server is working")
 	defer log.Println("Server stopped")

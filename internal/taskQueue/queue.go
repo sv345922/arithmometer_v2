@@ -1,12 +1,13 @@
 package taskQueue
 
 import (
-	"arithmometer/internal/entities"
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
 	"sync"
-	"time"
 )
 
 // Queue - Очередь задач.
@@ -16,11 +17,11 @@ import (
 // WaitingIds - id готовых для вычисления задач
 // L - количество элементов в очереди (всего)
 type Queue struct {
-	AllTasks    map[uint64]struct{} `json:"allTasks"`    // мапа всех задач
-	ReadyToCalc []*Task             `json:"readytocalc"` // готовые для выдачи вычислителям,
-	Working     *Tasks              `json:"working"`     // взятые вычислителем
-	NotReady    *Tasks              `json:"notready"`    // ожидающие решения других задач
-	L           uint                `json:"l"`           // количество элементов в очереди (всего)
+	AllTasks    map[uint64]*Task `json:"allTasks"`    // мапа всех задач
+	ReadyToCalc []uint64         `json:"readytocalc"` // готовые для выдачи вычислителям,
+	Working     *Tasks           `json:"working"`     // взятые вычислителем
+	NotReady    *Tasks           `json:"notready"`    // ожидающие решения других задач
+	L           uint             `json:"l"`           // количество элементов в очереди (всего)
 	mu          sync.RWMutex
 }
 
@@ -29,8 +30,8 @@ func NewQueue() *Queue {
 	working := NewTasks()
 	notReady := NewTasks()
 	return &Queue{
-		AllTasks:    make(map[uint64]struct{}),
-		ReadyToCalc: make([]*Task, 0),
+		AllTasks:    make(map[uint64]*Task),
+		ReadyToCalc: make([]uint64, 0),
 		Working:     working,
 		NotReady:    notReady,
 		L:           0,
@@ -46,13 +47,13 @@ func (q *Queue) Info() string {
 	)
 }
 
-func (q *Queue) AddExpressionNodes(nodes []*entities.Node) int {
+// Создает и добавляет таски в очeредь
+func (q *Queue) AddExpressionNodes(ctx context.Context, tx *sql.Tx, nodes []*entities.Node) error {
 	// Создаем словарь узлов
 	nodesMap := make(map[uint64]*entities.Node)
 	for _, node := range nodes {
 		nodesMap[node.Id] = node
 	}
-	n := 0
 	for _, node := range nodes {
 		// Если узел лист==не оператор, то в задачи не попадает
 		if node.Sheet {
@@ -69,10 +70,15 @@ func (q *Queue) AddExpressionNodes(nodes []*entities.Node) int {
 			task.Y = yNode.Val
 			task.YReady = true
 		}
-		q.AddTask(task)
-		n++
+		// Добавляем запись в БД
+		err := InsertTask(ctx, tx, task)
+		if err != nil {
+			return fmt.Errorf("cannot add task to queue: %w", err)
+		}
+		// Добавляем в очередь
+		_ = q.AddTask(task)
 	}
-	return n
+	return nil
 }
 
 // AddTask Добавляет задачу в список задач NotReady и увеличивает счетчик L,
@@ -84,43 +90,49 @@ func (q *Queue) AddTask(task *Task) bool {
 	}
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	if q.NotReady.Add(task) {
-		q.AllTasks[id] = struct{}{}
+	if q.NotReady.Add(id) {
+		q.AllTasks[id] = task
 		q.L++
+		//fmt.Printf("id %d добавлена в очередь\n", id) // TODO delete
 	}
 	return true
 }
 
 // RemoveTask Удаляет задачу из очереди задач
 func (q *Queue) RemoveTask(idTask uint64) bool {
+	// var msg = "задача удалена"
 	q.mu.RLock()
 	// проверяем наличие задачи в очереди
 	if _, ok := q.AllTasks[idTask]; !ok {
 		q.mu.RUnlock()
+		//log.Println("задача", idTask, "нет в очереди") // TODO delete?
 		return false
 	}
 	q.mu.RUnlock()
 
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	// удаляем из Working
 	if q.Working.Remove(idTask) {
 		delete(q.AllTasks, idTask)
 		q.L--
+		//log.Println(msg, idTask, "из working")
 		return true
 	}
 	// удаляем из NotReady
 	if q.NotReady.Remove(idTask) {
 		delete(q.AllTasks, idTask)
 		q.L--
+		// log.Println(msg, idTask, "из NotReady") //TODO delete
 		return true
 	}
 	// удаляем из ReadyToCalc
-	for i, task := range q.ReadyToCalc {
-		if task.GetID() == idTask {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	for i := 0; i < len(q.ReadyToCalc); i++ {
+		if q.ReadyToCalc[i] == idTask {
 			q.ReadyToCalc = append(q.ReadyToCalc[:i], q.ReadyToCalc[i+1:]...) // TODO возможная ошибка
 			delete(q.AllTasks, idTask)
 			q.L--
+			// log.Println(msg, idTask, "из ReadyToCalc") //TODO delete
 			return true
 		}
 	}
@@ -148,7 +160,7 @@ func (q *Queue) GetTask() *Task {
 		return nil
 	}
 	// Получаем задачу - первый элемент очереди
-	result := q.ReadyToCalc[0]
+	resultID := q.ReadyToCalc[0]
 	// удаляем из списка ReadyToCalc
 	switch l {
 	case 1:
@@ -157,23 +169,26 @@ func (q *Queue) GetTask() *Task {
 		q.ReadyToCalc = q.ReadyToCalc[1:] // иначе оставляем очередь без первого элемента
 	}
 	// переносим в список ожидающих решения
-	q.Working.Add(result)
+	q.Working.Add(resultID)
 
-	return result
+	return q.AllTasks[resultID]
 }
 
 // UpdateReady Обновляет очередь задач, находит среди NotReady готовые к вычислению
 // и переносит их в ReadyToCalc
+// TODO обновить с учетом выгрузки из БД всех tasks в notReady (проверять поле calcID)
 func (q *Queue) UpdateReady() {
-	//q.mu.RLock()
 	// получаем список ключей
 	keys := q.NotReady.GetAllIDs()
-	//q.mu.RUnlock()
 	// проходим по ключам и проверяем хранящиеся задачи на готовность к вычислению
 	for _, key := range keys {
-		task := q.NotReady.Get(key)
+		q.mu.RLock()
+		task := q.AllTasks[key]
+		q.mu.RUnlock()
 		if task.IsReadyToCalc() {
-			q.ReadyToCalc = append(q.ReadyToCalc, task)
+			q.mu.Lock()
+			q.ReadyToCalc = append(q.ReadyToCalc, key)
+			q.mu.Unlock()
 			q.NotReady.Remove(key)
 		}
 	}
@@ -184,22 +199,23 @@ func (q *Queue) UpdateReady() {
 // то задача переносится в список ожидающих.
 // Возвращает количество просроченных задач
 func (q *Queue) CheckDeadlines() int {
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	// получаем список ключей
 	keys := q.Working.GetAllIDs()
-
 	n := 0
 	for _, key := range keys {
-		task := q.Working.Get(key)
+		q.mu.RLock()
+		task := q.AllTasks[key]
+		q.mu.RUnlock()
 		// если задача с прошедшим дедлайном
 		if task.IsTimeout() {
 			// увеличиваем счетчик просроченных
 			n++
 			// устанавливаем дедлайн в далекое будущее
-			task.SetDeadline(time.Hour * 1000)
+			task.SetDeadline(3600 * 240)
 			// и перемещаем задачу в начало очереди ожидающих
-			q.ReadyToCalc = append([]*Task{task}, q.ReadyToCalc...)
+			q.mu.Lock()
+			q.ReadyToCalc = append([]uint64{key}, q.ReadyToCalc...)
+			q.mu.Unlock()
 			q.Working.Remove(key)
 		}
 	}
@@ -210,38 +226,38 @@ func (q *Queue) CheckDeadlines() int {
 // Возвращает true если вычислен конренвой узел
 func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 	// если нет task с таким id выходим с ошибкой
-	if _, ok := q.AllTasks[id]; !ok {
+	q.mu.RLock()
+	task, ok := q.AllTasks[id]
+	q.mu.RUnlock()
+	if !ok {
 		return false, entities.NoTaskInQueue
 	}
+	//Если нашли, записываем результат
+	task.SetResult(answer)
+
 	// проверяем Working
-	if task := q.Working.Get(id); task != nil {
-		//Если нашли, записываем результат
-		task.SetResult(answer)
+	if q.Working.Contains(id) {
 		// обновляем родительский узел
 		rootFlag, err := q.UpdateParent(answer, task)
 		// удаляем узел из очереди
 		q.RemoveTask(id)
 		return rootFlag, err
-
-		// проверяем NotReady
-	} else if task := q.NotReady.Get(id); task != nil {
-		//Если нашли, записываем результат
-		task.SetResult(answer)
+	}
+	// проверяем NotReady - TODO не должно быть таких ситуаций
+	if q.NotReady.Contains(id); task != nil {
 		// обновляем родительский узел
 		rootFlag, err := q.UpdateParent(answer, task)
 		// удаляем узел из очереди
 		q.RemoveTask(id)
 		return rootFlag, err
-
-		// проверяем ReadyToCalc
-	} else {
-		for _, task := range q.ReadyToCalc {
-			if task.GetID() == id {
-				task.SetResult(answer)
-				rootFlag, err := q.UpdateParent(answer, task)
-				q.RemoveTask(id)
-				return rootFlag, err
-			}
+	}
+	// TODO надо замьютить ReadyToCalc через копию возможно
+	// проверяем ReadyToCalc - если вычислитель сильно запаздал и задача вернулась в ожидающие
+	for _, taskId := range q.ReadyToCalc {
+		if taskId == id {
+			rootFlag, err := q.UpdateParent(answer, task)
+			q.RemoveTask(id)
+			return rootFlag, err
 		}
 	}
 	return false, entities.NoTaskInQueue
@@ -250,7 +266,9 @@ func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 // Устанавливает значения и флаги X/Y у родительского узла
 // возвращает true, если у узла нет родителя==он корень дерева
 func (q *Queue) UpdateParent(answer float64, task *Task) (bool, error) {
-	if parent := q.NotReady.Get(task.Node.Parent); parent != nil {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if parent := q.AllTasks[task.Node.Parent]; parent != nil {
 		switch task.Node.Id {
 		case parent.Node.X:
 			parent.X = answer
@@ -262,7 +280,6 @@ func (q *Queue) UpdateParent(answer float64, task *Task) (bool, error) {
 			return false, errors.Join(fmt.Errorf("ошибка при добавлении ответа"), entities.QueueError)
 		}
 		return false, nil
-	} else {
-		return true, nil
 	}
+	return true, nil
 }

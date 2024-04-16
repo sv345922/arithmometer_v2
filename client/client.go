@@ -35,8 +35,8 @@ func SendNewExpression(exprString string) (string, bool) {
 	timing := &entities.Timings{
 		Plus:  1,
 		Minus: 1,
-		Mult:  1,
-		Div:   1,
+		Mult:  2,
+		Div:   2,
 	}
 	//timing = nil
 	var expression = newExpression.NewExpr{

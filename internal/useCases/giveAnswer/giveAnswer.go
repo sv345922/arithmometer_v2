@@ -91,16 +91,16 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			expr := ws.Expressions[node.ExpressionId]
-			if expr == nil {
-				log.Println("no expr in ws")
+			expression := ws.Expressions[node.ExpressionId]
+			if expression == nil {
+				log.Println("no expression in ws")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			expr.Status = "done"
-			expr.ResultExpr = container.Result
+			expression.Status = "done"
+			expression.ResultExpr = container.Result
 			// Обновить expression в БД
-			err = UpdateExpressionResult(ctx, ws.DB, expr)
+			err = UpdateExpressionResult(ctx, ws.DB, expression)
 			if err != nil {
 				log.Println(err)
 			}
@@ -118,6 +118,8 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 					log.Println(err)
 					w.WriteHeader(http.StatusInternalServerError)
 				}
+				expression.RootId = 0
+
 				ws.Mu.Lock()
 				delete(ws.AllNodes, nodeId)
 				ws.Mu.Unlock()

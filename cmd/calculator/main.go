@@ -62,8 +62,8 @@ func SendAnswer(container entities.MessageResult) error {
 // Выполняет запросы оркестратору и вычисляет выражение
 // TODO периодическое подтверждение работы
 func main() {
-	log.Print("calculator is runing")
 	calcId := entities.GetDelta(5)
+	log.Printf("calculator %d is runing", calcId)
 	result := make(chan entities.MessageResult)
 	for {
 		container, err := getTask(fmt.Sprintf("%d", calcId))

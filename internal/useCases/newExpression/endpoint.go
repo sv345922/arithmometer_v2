@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"github.com/sv345922/arithmometer_v2/internal/parser"
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
@@ -53,7 +52,7 @@ func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Res
 			panic(err)
 		}
 		// Добавляем в AllNodes
-		err, tx = ws.AddToAllNodes(ctx, tx, newExpression.Nodes)
+		nodes, err, tx := ws.InsertToAllNodes(ctx, tx, newExpression.Nodes)
 		if err != nil {
 			log.Printf("add to all nodes failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -71,16 +70,17 @@ func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Res
 			return
 		}
 		// Установить id выражения в узлы
-		for _, node := range newExpression.Nodes {
+		for _, node := range nodes {
 			node.ExpressionId = newExpression.Id
 		}
-		// Получаем список преобразованных узлов
-		nodes := make([]*entities.Node, len(newExpression.Nodes))
-		for i, node := range newExpression.Nodes {
-			nodes[i] = parser.TransformNode(node)
-		}
 
-		// Добавляем в очередь
+		//// Получаем список преобразованных узлов
+		//nodes := make([]*entities.Node, 0, len(newExpression.Nodes))
+		//for _, node := range newExpression.Nodes {
+		//	nodes = append(nodes, parser.TransformNode(node))
+		//}
+
+		// Добавляем в таблицу queue БД
 		err = ws.Queue.AddExpressionNodes(ctx, tx, nodes)
 		if err != nil {
 			log.Println(err)
@@ -105,6 +105,7 @@ func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Res
 				return
 			}
 		}
+
 		// обновляем тайминги
 		err = updateTimings(ctx, tx, newClientExpression.Timings)
 		if err != nil {

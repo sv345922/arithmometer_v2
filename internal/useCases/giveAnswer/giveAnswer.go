@@ -39,15 +39,24 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 		// Если деление на ноль
 		if container.Err == "zero division" {
 			// найти корень выражения и внести ошибку деления на ноль
-			root, expression := ws.GetRoot(id)
+			root, expression, err := ws.GetRoot(id)
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			expression.Status = "zero division"
+			// обновить в БД выражение
+			err = UpdateExpressionResult(ctx, ws.DB, expression)
+			if err != nil {
+				log.Println(err)
+			}
 
 			// получить все узлы выражения
 			nodesId := make([]uint64, 0)
 			ws.GetExpressionNodesID(root.Id, &nodesId)
 
-			// удалить все узлы дерева выражения
-			// и из очереди задач
+			// удалить все узлы дерева выражения из allNodes
+			// и из queue
 			for _, nodeId := range nodesId {
 				// Удаляем из БД записи узлов
 				err = DeleteNodeTask(ctx, ws.DB, nodeId)
@@ -55,6 +64,7 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 					log.Println(err)
 					w.WriteHeader(http.StatusInternalServerError)
 				}
+				expression.RootId = 0
 				ws.Mu.Lock()
 				delete(ws.AllNodes, nodeId)
 				ws.Mu.Unlock()
@@ -72,17 +82,29 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 		// Если вычислен корень выражения
 		// обновим выражение и запишем результат
 		if rootFlag {
-			// TODO возможно двойные ифы не нужны?
+			//
 			// удаляем все узлы выражения из очереди и из allNodes
 			// обновляем статус выражения
-			if node, ok := ws.AllNodes[id]; ok {
-				if expr, ok := ws.Expressions[node.ExpressionId]; ok {
-					expr.Status = "done"
-					expr.ResultExpr = container.Result
-
-					// TODO обновить expressions
-				}
+			node := ws.AllNodes[id]
+			if node == nil {
+				log.Println("no node in ws")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
+			expr := ws.Expressions[node.ExpressionId]
+			if expr == nil {
+				log.Println("no expr in ws")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			expr.Status = "done"
+			expr.ResultExpr = container.Result
+			// Обновить expression в БД
+			err = UpdateExpressionResult(ctx, ws.DB, expr)
+			if err != nil {
+				log.Println(err)
+			}
+
 			// получить все узлы выражения
 			nodesId := make([]uint64, 0)
 			ws.GetExpressionNodesID(id, &nodesId)
@@ -108,6 +130,8 @@ func GiveAnswer(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Respon
 			if err != nil {
 				log.Println(err)
 			}
+			// и из queue
+			ws.Queue.RemoveTask(id)
 		}
 		w.WriteHeader(http.StatusOK)
 	}

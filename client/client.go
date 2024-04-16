@@ -13,11 +13,18 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
 // Задача для вычисления
-var expr = "-1+2-3/(4+5) * 6 -7 * 8 / 0"
+var expressions []string = []string{
+	"-1+2-3/(4+5) * 6 -7 * 8 / 0",     // zero division
+	"1 + 2 * 3",                       // 7
+	"(1 + 2) * 3 * 100 / (6 - 3 * 2)", // zero division
+	"(1 + 2) * 3",                     // 9
+	"(1 + 2 * 3) / 4",                 //
+}
 
 // var expr = "2 / 0"
 
@@ -73,21 +80,30 @@ func main() {
 	// отправка выражения
 	//flag.Parse()
 	if len(os.Args) > 1 {
-		expr = os.Args[1]
+		expressions = []string{os.Args[1]}
 	}
-	id, _ := SendNewExpression(expr)
-	fmt.Println()
-	//fmt.Println(id)
-
-	time.Sleep(10 * time.Second)
-	// получение ответа
-	_, answer, err := GetResult(id)
-	if err != nil {
-		log.Fatal(err)
+	idExpressions := make([]string, 0)
+	for _, expr := range expressions {
+		id, _ := SendNewExpression(expr)
+		idExpressions = append(idExpressions, id)
+		fmt.Println()
+		//fmt.Println(id)
 	}
-	for !strings.Contains(answer, "=") {
-		time.Sleep(3 * time.Second)
-		_, answer, err = GetResult(id)
+	wg := sync.WaitGroup{}
+	wg.Add(len(idExpressions))
+	for _, id := range idExpressions {
+		go func(id string) {
+			defer wg.Done()
+			// получение ответа
+			_, answer, err := GetResult(id)
+			if err != nil {
+				log.Fatal(err)
+			}
+			for !strings.Contains(answer, "=") {
+				time.Sleep(10 * time.Second)
+				_, answer, err = GetResult(id)
+			}
+		}(id)
 	}
-
+	wg.Wait()
 }

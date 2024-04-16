@@ -93,16 +93,21 @@ func (ws *WorkingSpace) AddToExpressions(ctx context.Context, tx *sql.Tx, expres
 		return 0, fmt.Errorf("cannot add expression: %w", err)
 	}
 	// добавляем выражение в список выражений
+	ws.Mu.Lock()
 	expression.Id = id
 
 	// Добавляем выражение в мапу выражений
 	ws.Expressions[expression.Id] = expression
-
+	ws.Mu.Unlock()
 	return id, nil
 }
 
 // Добавляем в allNodes узлы выражения, с сохранением в БД и присвоением id
-func (ws *WorkingSpace) AddToAllNodes(ctx context.Context, tx *sql.Tx, parseNodes []*parser.Node) (error, *sql.Tx) {
+// возвращаем список узлов выражения (тип entities.Node), ошибку
+// tx возвращаем, потомучто база данных блокируется иначе?
+func (ws *WorkingSpace) InsertToAllNodes(ctx context.Context,
+	tx *sql.Tx,
+	parseNodes []*parser.Node) ([]*entities.Node, error, *sql.Tx) {
 	// записать в БД и получить id
 	tx, err := ws.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -112,7 +117,7 @@ func (ws *WorkingSpace) AddToAllNodes(ctx context.Context, tx *sql.Tx, parseNode
 		node := parser.TransformNode(parseNode)
 		id, err := InsertNode(ctx, tx, node)
 		if err != nil {
-			return fmt.Errorf("cannot save node: %w", err), tx
+			return nil, fmt.Errorf("cannot save node: %w", err), tx
 		}
 		parseNode.NodeId = id
 	}
@@ -128,25 +133,26 @@ func (ws *WorkingSpace) AddToAllNodes(ctx context.Context, tx *sql.Tx, parseNode
 	for _, node := range nodes {
 		err = UpdateNode(ctx, tx, node)
 		if err != nil {
-			return fmt.Errorf("cannot update node: %w", err), tx
+			return nil, fmt.Errorf("cannot update node: %w", err), tx
 		}
 	}
 
-	return nil, tx
+	return nodes, nil, tx
 }
 
 // Возвращает корень узла и выражение с этим корнем
-func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expression) {
-	root, ok := ws.AllNodes[nodeId]
-	for ; !ok; root, ok = ws.AllNodes[root.Parent] {
+func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expression, error) {
+	ws.Mu.RLock()
+	defer ws.Mu.RUnlock()
+	expression, ok := ws.Expressions[ws.AllNodes[nodeId].ExpressionId]
+	if !ok {
+		return nil, nil, fmt.Errorf("cannot find expression")
 	}
-	var expression *entities.Expression
-	for _, expression = range ws.Expressions {
-		if expression.RootId == root.Id {
-			break
-		}
+	root, ok := ws.AllNodes[expression.RootId]
+	if !ok {
+		return nil, nil, fmt.Errorf("cannot find root")
 	}
-	return root, expression
+	return root, expression, nil
 }
 
 // Возвращает список id узлов выражения по id корня

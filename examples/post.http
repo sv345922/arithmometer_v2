@@ -2,12 +2,12 @@ POST http://localhost:8000/newexpression HTTP/1.1
 content-type: application/json
 
 {
-    "expression": "(1 + 2 * 3) / 4",
+    "expression": "10 /0",
   "timings": {
-    "div":    3,
-    "minus":  3,
-    "mult":   3,
-    "plus":   3
+    "plus":   2,
+    "minus":  2,
+    "mult":   4,
+    "div":    4
   }
 }
 

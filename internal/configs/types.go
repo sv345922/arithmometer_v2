@@ -3,16 +3,16 @@ package configs
 import "time"
 
 // Имя файла бызы данных
-var NameDataBase = "db"
+const NameDataBase = "db"
 
-var DBPath = "/db/database.db"
+const DBPath = "/db/database.db"
 
 // единичная длительность для операции
-var TConst = time.Second
+const TConst = time.Second
 
-var Port = "8000"
+const Port = "8000"
 
-var DefaultTimings = 1
+const DefaultTimings = 1
 
 const GRPCPort = "5000"
 

@@ -20,10 +20,13 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 		}
 		// Читаем id из параметров запроса
 		id := r.URL.Query().Get("id")
+
+		// при пустом ID возвращать все выражения (пользователя)
 		if id == "" {
-			// при пустом ID возвращать все выражения (пользователя)
-			// TODO пока не USERS используется userID=0
+			// TODO пока нет USERS используется userID=0
+			ws.Mu.Lock()
 			result, err := GetExpressions(0, ws.Expressions)
+			ws.Mu.Unlock()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}

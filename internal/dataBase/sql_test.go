@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-const dbfile = `D:\dev\Go\LMS\arithmometer_v2\arithmometer_v2\internal\dataBase\db\database.db`
+const dbfile = `./db/test_db.db`
 
 func TestCreateDb(t *testing.T) {
 	ctx := context.Background()
@@ -28,11 +28,10 @@ func TestInsertExpression(t *testing.T) {
 		ResultExpr: 0,
 		Status:     "status",
 		RootId:     222,
-		ParsError:  nil,
 	}
 	ctx := context.Background()
 
-	dataBase, err := CreateDb(ctx)
+	dataBase, err := CreateDb(ctx, "./db/test_db.db")
 	if err != nil {
 		log.Printf("%v", err)
 	}
@@ -73,7 +72,7 @@ func TestInsertNode(t *testing.T) {
 		Parent:       33,
 	}
 	ctx := context.Background()
-	dataBase, err := CreateDb(ctx)
+	dataBase, err := CreateDb(ctx, dbfile)
 	if err != nil {
 		log.Printf("%v", err)
 	}
@@ -91,7 +90,7 @@ func TestInsertNode(t *testing.T) {
 }
 func TestGetTimings(t *testing.T) {
 	ctx := context.Background()
-	dataBase, err := CreateDb(ctx)
+	dataBase, err := CreateDb(ctx, dbfile)
 	if err != nil {
 		log.Printf("%v", err)
 	}

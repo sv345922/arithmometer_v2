@@ -10,8 +10,10 @@ import (
 )
 
 func PrepareTask(ctx context.Context, ws *wSpace.WorkingSpace, calcId uint64) (*entities.MessageTask, int, error) {
+	ws.Mu.Lock()
+	defer ws.Mu.Unlock()
 	// TODO (элементы очереди) Обновляем очередь задач, чтобы обработать просроченные
-	ws.Queue.CheckDeadlines()
+	// ws.Queue.CheckDeadlines() повторяется в GetTask
 	// TODO (элементы очереди) Получаем задачу из очереди
 	task := ws.Queue.GetTask()
 

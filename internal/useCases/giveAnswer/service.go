@@ -9,6 +9,9 @@ import (
 )
 
 func AcceptAnswer(ctx context.Context, ws *wSpace.WorkingSpace, container entities.MessageResult) (status int, err error) {
+	ws.Mu.Lock()
+	defer ws.Mu.Unlock()
+
 	status = http.StatusOK
 	// получаем id задачи
 	id := container.Id
@@ -42,9 +45,7 @@ func AcceptAnswer(ctx context.Context, ws *wSpace.WorkingSpace, container entiti
 				status = http.StatusInternalServerError
 			}
 			expression.SetRoot(0)
-			ws.Mu.Lock()
 			delete(ws.AllNodes, nodeId)
-			ws.Mu.Unlock()
 			ws.Queue.RemoveTask(nodeId)
 		}
 		return status, nil
@@ -94,10 +95,7 @@ func AcceptAnswer(ctx context.Context, ws *wSpace.WorkingSpace, container entiti
 				status = http.StatusInternalServerError
 			}
 			expression.RootId = 0
-
-			ws.Mu.Lock()
 			delete(ws.AllNodes, nodeId)
-			ws.Mu.Unlock()
 			ws.Queue.RemoveTask(nodeId)
 		}
 

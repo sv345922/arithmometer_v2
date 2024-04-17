@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
-	"sync"
+
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 )
 
 // Queue - Очередь задач.
@@ -22,7 +22,6 @@ type Queue struct {
 	Working     *Tasks           `json:"working"`     // взятые вычислителем
 	NotReady    *Tasks           `json:"notready"`    // ожидающие решения других задач
 	L           uint             `json:"l"`           // количество элементов в очереди (всего)
-	mu          sync.RWMutex
 }
 
 // NewTasks Возвращает указатель на новую очередь задач
@@ -35,7 +34,6 @@ func NewQueue() *Queue {
 		Working:     working,
 		NotReady:    notReady,
 		L:           0,
-		mu:          sync.RWMutex{},
 	}
 }
 func (q *Queue) Info() string {
@@ -88,32 +86,22 @@ func (q *Queue) AddTask(task *Task) bool {
 	if _, ok := q.AllTasks[id]; ok {
 		return false
 	}
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	if q.NotReady.Add(id) {
 		q.AllTasks[id] = task
 		q.L++
-		//fmt.Printf("id %d добавлена в очередь\n", id) // TODO delete
 	}
 	return true
 }
 
 // RemoveTask Удаляет задачу из очереди задач
 func (q *Queue) RemoveTask(idTask uint64) bool {
-	// var msg = "задача удалена"
-	q.mu.RLock()
 	// проверяем наличие задачи в очереди
 	if _, ok := q.AllTasks[idTask]; !ok {
-		q.mu.RUnlock()
-		//log.Println("задача", idTask, "нет в очереди") // TODO delete?
 		return false
 	}
-	q.mu.RUnlock()
 
 	// удаляем из Working
 	if q.Working.Remove(idTask) {
-		q.mu.Lock()
-		defer q.mu.Unlock()
 		delete(q.AllTasks, idTask)
 		q.L--
 		//log.Println(msg, idTask, "из working")
@@ -121,16 +109,12 @@ func (q *Queue) RemoveTask(idTask uint64) bool {
 	}
 	// удаляем из NotReady
 	if q.NotReady.Remove(idTask) {
-		q.mu.Lock()
-		defer q.mu.Unlock()
 		delete(q.AllTasks, idTask)
 		q.L--
 		// log.Println(msg, idTask, "из NotReady") //TODO delete
 		return true
 	}
 	// удаляем из ReadyToCalc
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	for i := 0; i < len(q.ReadyToCalc); i++ {
 		if q.ReadyToCalc[i] == idTask {
 			q.ReadyToCalc = append(q.ReadyToCalc[:i], q.ReadyToCalc[i+1:]...) // TODO возможная ошибка
@@ -156,8 +140,6 @@ func (q *Queue) GetTask() *Task {
 	q.UpdateReady()
 
 	// берем первый элемент из очереди
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	l := len(q.ReadyToCalc)
 	// если очередь пустая возвращаем nil
 	if l == 0 {
@@ -186,13 +168,13 @@ func (q *Queue) UpdateReady() {
 	keys := q.NotReady.GetAllIDs()
 	// проходим по ключам и проверяем хранящиеся задачи на готовность к вычислению
 	for _, key := range keys {
-		q.mu.RLock()
 		task := q.AllTasks[key]
-		q.mu.RUnlock()
+		if task == nil {
+			log.Println("Ошибка обновления очереди")
+			return
+		}
 		if task.IsReadyToCalc() {
-			q.mu.Lock()
 			q.ReadyToCalc = append(q.ReadyToCalc, key)
-			q.mu.Unlock()
 			q.NotReady.Remove(key)
 		}
 	}
@@ -207,9 +189,10 @@ func (q *Queue) CheckDeadlines() int {
 	keys := q.Working.GetAllIDs()
 	n := 0
 	for _, key := range keys {
-		q.mu.RLock()
 		task := q.AllTasks[key]
-		q.mu.RUnlock()
+		if task == nil {
+			continue
+		}
 		// если задача с прошедшим дедлайном
 		if task.IsTimeout() {
 			// увеличиваем счетчик просроченных
@@ -217,9 +200,7 @@ func (q *Queue) CheckDeadlines() int {
 			// устанавливаем дедлайн в далекое будущее
 			task.SetDeadline(3600 * 240)
 			// и перемещаем задачу в начало очереди ожидающих
-			q.mu.Lock()
 			q.ReadyToCalc = append([]uint64{key}, q.ReadyToCalc...)
-			q.mu.Unlock()
 			q.Working.Remove(key)
 		}
 	}
@@ -230,9 +211,7 @@ func (q *Queue) CheckDeadlines() int {
 // Возвращает true если вычислен конренвой узел
 func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 	// если нет task с таким id выходим с ошибкой
-	q.mu.RLock()
 	task, ok := q.AllTasks[id]
-	q.mu.RUnlock()
 	if !ok {
 		return false, entities.NoTaskInQueue
 	}
@@ -255,14 +234,8 @@ func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 		q.RemoveTask(id)
 		return rootFlag, err
 	}
-	// TODO надо замьютить ReadyToCalc через копию возможно
 	// проверяем ReadyToCalc - если вычислитель сильно запаздал и задача вернулась в ожидающие
-
-	q.mu.RLock()
-	readyToCalc := make([]uint64, len(q.ReadyToCalc))
-	copy(readyToCalc, q.ReadyToCalc)
-	q.mu.RUnlock()
-	for _, taskId := range readyToCalc {
+	for _, taskId := range q.ReadyToCalc {
 		if taskId == id {
 			rootFlag, err := q.UpdateParent(answer, task)
 			q.RemoveTask(id)
@@ -275,8 +248,6 @@ func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 // Устанавливает значения и флаги X/Y у родительского узла
 // возвращает true, если у узла нет родителя==он корень дерева
 func (q *Queue) UpdateParent(answer float64, task *Task) (bool, error) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
 	if parent := q.AllTasks[task.Node.Parent]; parent != nil {
 		switch task.Node.Id {
 		case parent.Node.X:

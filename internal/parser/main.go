@@ -19,7 +19,7 @@ func NewExpression() *Expression {
 }
 
 // Парсит выражения и заполняет поля структуры Expression, возвращает ошибку
-// не заполнятся поля ID
+// не заполняются поля ID
 func (e *Expression) Parse(expr string, t entities.Timings) error {
 	e.UserTask = expr
 	e.Times = t

@@ -2,12 +2,10 @@ package taskQueue
 
 import (
 	"fmt"
-	"sync"
 )
 
 type Tasks struct {
 	AllTask map[uint64]struct{}
-	mu      sync.RWMutex
 }
 
 // Создать новой список узлов
@@ -23,9 +21,6 @@ func (t *Tasks) Len() int {
 
 // Если узел есть в списке, возвращает true, иниче false
 func (t *Tasks) Contains(key uint64) bool {
-	// TODO проверить мьютексы
-	//t.mu.RLock()
-	//defer t.mu.RUnlock()
 	if _, ok := t.AllTask[key]; ok {
 		return true
 	}
@@ -37,30 +32,13 @@ func (t *Tasks) Add(id uint64) bool {
 	if t.Contains(id) {
 		return false
 	}
-	// TODO проверить мьютексы
-	// t.mu.Lock()
-	// defer t.mu.Unlock()
 	t.AllTask[id] = struct{}{}
 	return true
 }
 
-// TODO не будет использоваться
-//// возвращает узел из списка по его id, если id нет в списке узлов, возвращает nil
-//func (t *Tasks) Get(id uint64) *Task {
-//	if t.Contains(id) {
-//		//t.mu.RLock()
-//		// defer t.mu.RUnlock
-//		result := t.AllTask[id]
-//		return result
-//	}
-//	return nil
-//}
-
 // Удалить узел из списка узлов по его id, если узла с таким id нет, возвращает false
 func (t *Tasks) Remove(key uint64) bool {
 	if t.Contains(key) {
-		t.mu.Lock()
-		defer t.mu.Unlock()
 		delete(t.AllTask, key)
 		return true
 	}
@@ -80,9 +58,6 @@ func (t *Tasks) String() string {
 func (t *Tasks) GetAllIDs() []uint64 {
 	result := make([]uint64, len(t.AllTask))
 	i := 0
-	// TODO проверить мьютексы
-	t.mu.RLock()
-	defer t.mu.RUnlock()
 	for key := range t.AllTask {
 		result[i] = key
 		i++

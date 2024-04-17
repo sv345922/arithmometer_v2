@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/sv345922/arithmometer_v2/internal/configs"
-	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
 	"os"
+
+	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/sv345922/arithmometer_v2/internal/configs"
+	"github.com/sv345922/arithmometer_v2/internal/entities"
 )
 
 // структура для взаимождействия с базой данных sql

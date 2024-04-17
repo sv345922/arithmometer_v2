@@ -15,7 +15,7 @@ func NewCalculator() *Calculator {
 	}
 }
 func (c *Calculator) Do(ctx context.Context) error {
-	log.Printf("calculator %d is runing", c.Id)
+	log.Printf("calculator %d is running ...", c.Id)
 	for {
 		ok, err := c.GetTaskGrpc(ctx)
 		if err != nil {

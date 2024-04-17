@@ -98,12 +98,9 @@ func (ws *WorkingSpace) AddToExpressions(ctx context.Context, tx *sql.Tx, expres
 		return 0, fmt.Errorf("cannot add expression: %w", err)
 	}
 	// добавляем выражение в список выражений
-	ws.Mu.Lock()
 	expression.Id = id
-
 	// Добавляем выражение в мапу выражений
 	ws.Expressions[expression.Id] = expression
-	ws.Mu.Unlock()
 	return id, nil
 }
 
@@ -147,9 +144,12 @@ func (ws *WorkingSpace) InsertToAllNodes(ctx context.Context,
 
 // Возвращает корень узла и выражение с этим корнем
 func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expression, error) {
-	ws.Mu.RLock()
-	defer ws.Mu.RUnlock()
-	expression, ok := ws.Expressions[ws.AllNodes[nodeId].ExpressionId]
+	node := ws.AllNodes[nodeId]
+	if node == nil {
+		return nil, nil, fmt.Errorf("cannot find node")
+	}
+	exprId := node.ExpressionId
+	expression, ok := ws.Expressions[exprId]
 	if !ok {
 		return nil, nil, fmt.Errorf("cannot find expression")
 	}
@@ -163,9 +163,7 @@ func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expres
 // Возвращает список id узлов выражения по id корня
 func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId *[]uint64) {
 	*nodesId = append(*nodesId, nodeId)
-	ws.Mu.RLock()
 	node, ok := ws.AllNodes[nodeId]
-	ws.Mu.RUnlock()
 	if !ok || node.IsSheet() {
 		return
 	}
@@ -178,13 +176,13 @@ func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId *[]uint64) {
 func LoadDB(ctx context.Context, db *sql.DB) (*WorkingSpace, error) {
 	// Создаем рабочее пространство
 	ws := NewWorkingSpace(db)
+	ws.Mu.Lock()
 	dataBase := dataBase.NewDB()
 	err := dataBase.Load(ctx, db)
 	if err != nil {
 		//log.Println(err)
 		return ws, fmt.Errorf("load database: %w", err)
 	}
-	ws.Mu.Lock()
 	// заполняем поля
 	// Expressions
 	for _, expression := range dataBase.Expressions {

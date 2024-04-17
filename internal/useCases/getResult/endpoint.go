@@ -32,14 +32,16 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 			log.Printf("отправлены все выражения пользователя %d", 0)
 			return
 		}
-		log.Println("Id выражения =", id)
 
 		// TODO реализовать проверку пользователя и его выражений
 
 		// преобразуем id в число
 		idInt, _ := strconv.ParseUint(id, 10, 64)
 		// Поиск выражения в списке выражений
+		log.Printf("Выражени %d запрошено клиентом", idInt)
+		ws.Mu.RLock()
 		expression, ok := ws.Expressions[idInt]
+		ws.Mu.RUnlock()
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("id not found"))

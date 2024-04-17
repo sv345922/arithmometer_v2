@@ -1,0 +1,39 @@
+syntax = "proto3"; // версия proto файлов
+package taskTransport; // название пакета
+option go_package = "github.com/sv345922/arithmometer_v2/internal/proto";
+
+// Сервером должен быть оркестратор
+// Клиентом должен быть калькулятор
+// сервер работает всегда, клиент создает запросы по необходимости
+
+// id калькулятора
+message CalculatorID {
+  uint64 id = 1;
+}
+// квитанция о приеме ответа вычислителя
+message Receipt {
+  bool ok = 1;
+}
+// Сообщение, описывающее передачу от оркестратора к калькулятору
+message MessageTask {
+  uint64 id = 1;
+  double x = 2;
+  double y = 3;
+  string op = 4;
+  int64 plus = 5;
+  int64 minus = 6;
+  int64 mult = 7;
+  int64 div = 8;
+}
+// Сообщение, описывающее передачу от калькулятора к оркестратору
+message MessageResult {
+  int64 id = 1;
+  double result = 2;
+  string err = 3;
+}
+// Определение сервиса
+service CalcService {
+  // Методы сервиса
+  rpc GetTask (CalculatorID) returns (MessageTask);
+  rpc SendAnswer (MessageResult) returns (Receipt);
+}

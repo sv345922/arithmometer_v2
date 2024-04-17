@@ -103,7 +103,7 @@ func CreateEmptyDb(ctx context.Context) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CreateDb(ctx)
+	return CreateDb(ctx, configs.DBPath)
 }
 
 // Проверяет файл на существование
@@ -119,13 +119,13 @@ func IsFileExist(path string) (found bool, err error) {
 }
 
 // Создает подключение базы данных, при отсутсвии таблиц сождает новые
-func CreateDb(ctx context.Context) (*sql.DB, error) {
+func CreateDb(ctx context.Context, nameDB string) (*sql.DB, error) {
 	// Создаем файл с пустой БД
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("getWD: %w", err)
 	}
-	path := wd + configs.DBPath
+	path := wd + nameDB
 	//fmt.Println("PATH=", path)
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {

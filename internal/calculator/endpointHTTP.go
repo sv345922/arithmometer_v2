@@ -2,6 +2,7 @@ package calculator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/sv345922/arithmometer_v2/internal/entities"
@@ -13,7 +14,7 @@ import (
 // и возвращает результат с ошибкой
 
 // запрашивает задачу у оркестратора
-func (c *Calculator) GetTask() (bool, error) {
+func (c *Calculator) GetTask(ctx context.Context) (bool, error) {
 	container := &entities.MessageTask{}
 	//container := &calculator.TaskContainer{}
 	url := fmt.Sprintf("%s/gettask?id=%d", URL, c.Id)
@@ -40,15 +41,18 @@ func (c *Calculator) GetTask() (bool, error) {
 }
 
 // Отправляем ответ, если не отправилось, возвращаем ошибку
-func (c *Calculator) SendAnswer(container entities.MessageResult) error {
+func (c *Calculator) SendAnswer(ctx context.Context, container *entities.MessageResult) error {
 	url := URL + "/giveanswer"
 
-	data, _ := json.Marshal(container) //ошибку пропускаем
+	data, err := json.Marshal(container) //ошибку пропускаем
+	if err != nil {
+		return fmt.Errorf("marshal container: %w", err)
+	}
 	r := bytes.NewReader(data)
 
 	resp, err := http.Post(url, "application/json", r)
 	if err != nil {
-		fmt.Printf("ошибка отправки запроса POST", err) //  POST%!(EXTRA *url.Error=Post "http://127.0.0.1:8000/giveanswer": EOF)
+		fmt.Printf("ошибка отправки запроса POST", err)
 		return err
 	}
 	if resp.StatusCode == http.StatusOK {

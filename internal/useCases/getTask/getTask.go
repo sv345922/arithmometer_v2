@@ -3,7 +3,6 @@ package getTask
 import (
 	"context"
 	"encoding/json"
-	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"net/http"
@@ -33,42 +32,23 @@ func GetTask(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.ResponseW
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// TODO (элементы очереди) Обновляем очередь задач, чтобы обработать просроченные
-		ws.Queue.CheckDeadlines()
-		// TODO (элементы очереди) Получаем задачу из очереди
-		task := ws.Queue.GetTask()
 
-		if task == nil {
-			// Если активных задач нет
-			log.Println("tok")
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		// Устанавливаем id калькулятора
-		task.CalcId = uint64(calcId)
-		// Устанавливаем длительность операции
-		task.Duration = ws.Timings.GetDuration(task.Node.Op)
-		// Устанавливаем дедлайн для задачи
-		timeout := task.Duration * 15 / 10
-		task.SetDeadline(timeout)
-		// обновляем поля в БД
-		err = UpdateInGetTask(ctx, ws.DB, task)
+		container, httpStatus, err := PrepareTask(ctx, ws, uint64(calcId))
 		if err != nil {
-			log.Printf("%v", err)
+			log.Println(err)
+			w.WriteHeader(httpStatus)
+			w.Write([]byte(err.Error()))
 		}
-
-		// Создаем структуру для передачи вычислителю
-		container := entities.MessageTask{
-			Id:      task.Node.Id,
-			X:       task.X,
-			Y:       task.Y,
-			Op:      task.Node.Op,
-			Timings: ws.Timings,
+		if container == nil {
+			w.WriteHeader(httpStatus)
+			return
 		}
 		// Маршалим её
 		data, _ := json.Marshal(&container) //ошибку пропускаем
 		// и записываем в ответ вычислителю
+		w.WriteHeader(httpStatus)
 		w.Write(data)
-		log.Printf("calc %d, задача %.3f%s%.3f", task.CalcId, task.X, task.Node.Op, task.Y)
+
+		log.Printf("calc %d: задача %.3f%s%.3f", calcId, container.X, container.Op, container.Y)
 	}
 }

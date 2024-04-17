@@ -13,3 +13,7 @@ var TConst = time.Second
 var Port = "8000"
 
 var DefaultTimings = 1
+
+const GRPCPort = "5000"
+
+const Host = "localhost"

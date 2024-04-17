@@ -23,7 +23,8 @@ var expressions []string = []string{
 	"1 + 2 * 3",                       // 7
 	"(1 + 2) * 3 * 100 / (6 - 3 * 2)", // zero division
 	"(1 + 2) * 3",                     // 9
-	"(1 + 2 * 3) / 4",                 //
+	"(1 + 2 * 3) / 4",                 // 1.75
+
 }
 
 // var expr = "2 / 0"
@@ -34,9 +35,9 @@ func SendNewExpression(exprString string) (string, bool) {
 	// Задать тайминги вычислений
 	timing := &entities.Timings{
 		Plus:  1,
-		Minus: 1,
-		Mult:  2,
-		Div:   2,
+		Minus: 3,
+		Mult:  5,
+		Div:   9,
 	}
 	//timing = nil
 	var expression = newExpression.NewExpr{

@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func RunServer(ctx context.Context, ws *wSpace.WorkingSpace) error {
+func RunHTTPServer(ctx context.Context, ws *wSpace.WorkingSpace) error {
 	mux := http.NewServeMux()
 
 	// Дать ответ клиенту о результатах вычисления выражений

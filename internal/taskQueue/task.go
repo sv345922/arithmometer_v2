@@ -67,7 +67,6 @@ func (t *Task) SetDeadline(add int) {
 	t.mu.Unlock()
 }
 
-// TODO не используется
 func (t *Task) SetDuration(duration int) {
 	t.mu.Lock()
 	t.Duration = duration

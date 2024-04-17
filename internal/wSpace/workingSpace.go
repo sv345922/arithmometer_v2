@@ -22,6 +22,11 @@ type WorkingSpace struct {
 	Mu          sync.RWMutex
 }
 
+//func (ws *WorkingSpace) apply(options *interface{}) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+
 func NewWorkingSpace(db *sql.DB) *WorkingSpace {
 	ws := new(WorkingSpace)
 	ws.Queue = taskQueue.NewQueue()
@@ -158,8 +163,10 @@ func (ws *WorkingSpace) GetRoot(nodeId uint64) (*entities.Node, *entities.Expres
 // Возвращает список id узлов выражения по id корня
 func (ws *WorkingSpace) GetExpressionNodesID(nodeId uint64, nodesId *[]uint64) {
 	*nodesId = append(*nodesId, nodeId)
+	ws.Mu.RLock()
 	node, ok := ws.AllNodes[nodeId]
-	if !ok || node.Sheet {
+	ws.Mu.RUnlock()
+	if !ok || node.IsSheet() {
 		return
 	}
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"github.com/sv345922/arithmometer_v2/internal/app"
+	"github.com/sv345922/arithmometer_v2/internal/configs"
 	"github.com/sv345922/arithmometer_v2/internal/dataBase"
+	"github.com/sv345922/arithmometer_v2/internal/grps/server"
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
 	"os"
@@ -34,7 +36,7 @@ func main() {
 			}
 		}
 	} else {
-		dbase, err = dataBase.CreateDb(ctx)
+		dbase, err = dataBase.CreateDb(ctx, configs.DBPath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -45,7 +47,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("main: %v", err)
 	}
-	err = app.RunServer(ctx, ws)
+	go func() {
+		log.Println(server.StartGRPCServer(ctx, ws))
+	}()
+	err = app.RunHTTPServer(ctx, ws)
 	log.Println(err)
 }
 

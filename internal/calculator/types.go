@@ -6,9 +6,8 @@ import (
 )
 
 type Calculator struct {
-	Id   int
+	Id   uint64
 	Task *entities.MessageTask
-	Ch   chan entities.MessageResult
 }
 
 var URL = "http://127.0.0.1:" + configs.Port

@@ -112,6 +112,8 @@ func (q *Queue) RemoveTask(idTask uint64) bool {
 
 	// удаляем из Working
 	if q.Working.Remove(idTask) {
+		q.mu.Lock()
+		defer q.mu.Unlock()
 		delete(q.AllTasks, idTask)
 		q.L--
 		//log.Println(msg, idTask, "из working")
@@ -119,6 +121,8 @@ func (q *Queue) RemoveTask(idTask uint64) bool {
 	}
 	// удаляем из NotReady
 	if q.NotReady.Remove(idTask) {
+		q.mu.Lock()
+		defer q.mu.Unlock()
 		delete(q.AllTasks, idTask)
 		q.L--
 		// log.Println(msg, idTask, "из NotReady") //TODO delete
@@ -253,7 +257,12 @@ func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 	}
 	// TODO надо замьютить ReadyToCalc через копию возможно
 	// проверяем ReadyToCalc - если вычислитель сильно запаздал и задача вернулась в ожидающие
-	for _, taskId := range q.ReadyToCalc {
+
+	q.mu.RLock()
+	readyToCalc := make([]uint64, len(q.ReadyToCalc))
+	copy(readyToCalc, q.ReadyToCalc)
+	q.mu.RUnlock()
+	for _, taskId := range readyToCalc {
 		if taskId == id {
 			rootFlag, err := q.UpdateParent(answer, task)
 			q.RemoveTask(id)

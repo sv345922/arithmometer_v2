@@ -1,7 +1,7 @@
 package calculator
 
 import (
-	"fmt"
+	"context"
 	"github.com/sv345922/arithmometer_v2/internal/configs"
 	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"log"
@@ -10,40 +10,35 @@ import (
 
 func NewCalculator() *Calculator {
 	return &Calculator{
-		Id:   entities.GetDelta(5),
+		Id:   uint64(entities.GetDelta(5)),
 		Task: new(entities.MessageTask),
-		Ch:   make(chan entities.MessageResult),
 	}
 }
-func (c *Calculator) Do() error {
+func (c *Calculator) Do(ctx context.Context) error {
 	log.Printf("calculator %d is runing", c.Id)
 	for {
-		ok, err := c.GetTask()
+		ok, err := c.GetTaskGrpc(ctx)
 		if err != nil {
 			log.Println("ошибка получения задачи", err)
 		}
 		// Окрестратор не дал задание
 		if !ok {
-			time.Sleep(5 * time.Second)
-			log.Println("tik ")
+			//log.Println("tik ")
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		// запускаем задачу в горутине
-		go func() {
-			res, err := c.Calculate()
-			fmt.Printf("res: %f, time: %v\n", res, c.Task.Timings)
-			errString := "nil"
-			if err != nil {
-				errString = err.Error()
-			}
-			c.Ch <- entities.MessageResult{
-				Id:     c.Task.Id,
-				Result: res,
-				Err:    errString,
-			}
-		}()
-		answer := <-c.Ch
+		res, err := c.Calculate()
+		// fmt.Printf("res: %f, time: %v\n", res, c.Task.Timings) // todo delete
+		errString := "nil"
+		if err != nil {
+			errString = err.Error()
+		}
+
+		answer := &entities.MessageResult{
+			Id:     c.Task.Id,
+			Result: res,
+			Err:    errString,
+		}
 		log.Printf("%.3f%s%.3f=%f, ошибка %s\n",
 			c.Task.X,
 			c.Task.Op,
@@ -53,7 +48,7 @@ func (c *Calculator) Do() error {
 		)
 		// отправляем ответ, до тех пор пока он не будет принят
 		for {
-			err = c.SendAnswer(answer)
+			err = c.SendAnswerGrpc(ctx, answer)
 			if err == nil {
 				break
 			}
@@ -67,7 +62,7 @@ func (c *Calculator) Calculate() (float64, error) {
 	Op := task.Op
 	x := task.X
 	y := task.Y
-	log.Println("задача получена", x, Op, y)
+	log.Printf("задача %f%s%f вычисляется, id: %d", x, Op, y, c.Task.Id)
 	switch Op {
 	case "+":
 		t := time.Duration(timings.Plus)

@@ -2,7 +2,7 @@ POST http://localhost:8000/newexpression HTTP/1.1
 content-type: application/json
 
 {
-    "expression": "",
+    "expression": "1+1",
   "timings": {
     "plus":   2,
     "minus":  2,

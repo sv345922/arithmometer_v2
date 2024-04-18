@@ -63,7 +63,7 @@ func TestAll(t *testing.T) {
 
 	tests := []testCase{
 		{"", 0, 1,
-			"id not found", true, "400 Bad Request"},
+			"400 Bad Request", true, "400 Bad Request"},
 
 		{"-5", 1, 1,
 			"-5 = -5.000000", true, "200 OK"},

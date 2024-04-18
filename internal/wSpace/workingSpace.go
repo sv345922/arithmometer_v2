@@ -22,11 +22,6 @@ type WorkingSpace struct {
 	Mu          sync.RWMutex
 }
 
-//func (ws *WorkingSpace) apply(options *interface{}) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-
 func NewWorkingSpace(db *sql.DB) *WorkingSpace {
 	ws := new(WorkingSpace)
 	ws.Queue = taskQueue.NewQueue()
@@ -41,7 +36,7 @@ func NewWorkingSpace(db *sql.DB) *WorkingSpace {
 }
 
 // Сохраняет рабочее пространство
-// TODO не будет использоваться
+// Не используется
 
 func (ws *WorkingSpace) Save() error {
 	ws.Mu.RLock()

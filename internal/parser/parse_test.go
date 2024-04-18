@@ -39,9 +39,6 @@ func TestExpression(T *testing.T) {
 var symbols = make([][]*Symbol, len(tests))
 var postfix = make([][]*Symbol, len(tests))
 
-func TestExpression_Do(t *testing.T) {
-	// TODO
-}
 func TestParse(T *testing.T) {
 	for i, test := range tests {
 		s, err := Parse(test.input)

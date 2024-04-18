@@ -5,6 +5,7 @@ import (
 	"github.com/sv345922/arithmometer_v2/client/appClient"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,14 +21,22 @@ var expressions []string = []string{
 }
 
 func main() {
+	timing := 1 // время операции
+
 	// отправка выражения
 	//flag.Parse()
 	if len(os.Args) > 1 {
 		expressions = []string{os.Args[1]}
 	}
+	if len(os.Args) > 2 {
+		t, err := strconv.Atoi(os.Args[2])
+		if err == nil {
+			timing = t
+		}
+	}
 	idExpressions := make([]string, 0)
 	for _, expr := range expressions {
-		id, _ := appClient.SendNewExpression(expr, 0)
+		id, _ := appClient.SendNewExpression(expr, timing)
 		idExpressions = append(idExpressions, id)
 		fmt.Println()
 		//fmt.Println(id)

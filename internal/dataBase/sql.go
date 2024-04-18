@@ -9,7 +9,6 @@ import (
 	"github.com/sv345922/arithmometer_v2/internal/entities"
 )
 
-// TODO
 func CreateTables(ctx context.Context, db *sql.DB) error {
 
 	if _, err := db.ExecContext(ctx, query.Q_Tasks); err != nil {
@@ -41,7 +40,7 @@ func CreateTables(ctx context.Context, db *sql.DB) error {
 
 // Загружает в пустую структуру DataBase  данные из sqlite
 func (db *DataBase) Load(ctx context.Context, dataBase *sql.DB) error {
-	// TODO таблицы очередей и user
+
 	// заполняем поля
 	expressions, err := GetExpressions(ctx, dataBase)
 	if err != nil {

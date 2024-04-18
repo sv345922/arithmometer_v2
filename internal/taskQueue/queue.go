@@ -111,16 +111,14 @@ func (q *Queue) RemoveTask(idTask uint64) bool {
 	if q.NotReady.Remove(idTask) {
 		delete(q.AllTasks, idTask)
 		q.L--
-		// log.Println(msg, idTask, "из NotReady") //TODO delete
 		return true
 	}
 	// удаляем из ReadyToCalc
 	for i := 0; i < len(q.ReadyToCalc); i++ {
 		if q.ReadyToCalc[i] == idTask {
-			q.ReadyToCalc = append(q.ReadyToCalc[:i], q.ReadyToCalc[i+1:]...) // TODO возможная ошибка
+			q.ReadyToCalc = append(q.ReadyToCalc[:i], q.ReadyToCalc[i+1:]...)
 			delete(q.AllTasks, idTask)
 			q.L--
-			// log.Println(msg, idTask, "из ReadyToCalc") //TODO delete
 			return true
 		}
 	}
@@ -162,7 +160,7 @@ func (q *Queue) GetTask() *Task {
 
 // UpdateReady Обновляет очередь задач, находит среди NotReady готовые к вычислению
 // и переносит их в ReadyToCalc
-// TODO обновить с учетом выгрузки из БД всех tasks в notReady (проверять поле calcID)
+
 func (q *Queue) UpdateReady() {
 	// получаем список ключей
 	keys := q.NotReady.GetAllIDs()
@@ -226,7 +224,7 @@ func (q *Queue) AddAnswer(id uint64, answer float64) (bool, error) {
 		q.RemoveTask(id)
 		return rootFlag, err
 	}
-	// проверяем NotReady - TODO не должно быть таких ситуаций
+	// проверяем NotReady - не должно быть таких ситуаций
 	if q.NotReady.Contains(id); task != nil {
 		// обновляем родительский узел
 		rootFlag, err := q.UpdateParent(answer, task)

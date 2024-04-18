@@ -28,7 +28,6 @@ func (c *Calculator) Do(ctx context.Context) error {
 			continue
 		}
 		res, err := c.Calculate()
-		// fmt.Printf("res: %f, time: %v\n", res, c.Task.Timings) // todo delete
 		errString := "nil"
 		if err != nil {
 			errString = err.Error()

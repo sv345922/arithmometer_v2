@@ -30,20 +30,24 @@ func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Res
 			return
 		}
 		newExpression, status, err := ProcessExpression(ctx, ws, &newClientExpression)
-		// todo доработать при передаче только таймингов!
 		w.WriteHeader(status)
 		if err != nil {
 			log.Println(err)
 			w.Write([]byte(err.Error()))
 			return
 		}
+		if newClientExpression.Expression == "" {
+			w.Write([]byte(fmt.Sprintf("timings implemented %v", ws.Timings.String())))
+			return
+		}
+
 		// Записываем в тело ответа id выражения
 		w.Write([]byte(fmt.Sprintf("%d", newExpression.Id)))
 
 		log.Printf("Method: %s, Expression: %s, Timings: %s, id: %d",
 			r.Method,
 			newExpression.UserTask,
-			newExpression.Times.String(),
+			ws.Timings.String(),
 			newExpression.Id,
 		)
 	}

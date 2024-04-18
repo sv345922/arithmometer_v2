@@ -7,11 +7,10 @@ import (
 
 type Expression struct {
 	entities.Expression
-	ParsError error            `json:"parsError"`
-	Postfix   []*Symbol        `json:"postfix"` // Постфиксная запись выражения
-	Times     entities.Timings `json:"times"`   // Тайминги
-	Root      *Node            `json:"root"`    // Корень дерева выражения
-	Nodes     []*Node          `json:"nodes"`   // Узлы выражения
+	ParsError error     `json:"parsError"`
+	Postfix   []*Symbol `json:"postfix"` // Постфиксная запись выражения
+	Root      *Node     `json:"root"`    // Корень дерева выражения
+	Nodes     []*Node   `json:"nodes"`   // Узлы выражения
 }
 
 func NewExpression() *Expression {
@@ -20,9 +19,9 @@ func NewExpression() *Expression {
 
 // Парсит выражения и заполняет поля структуры Expression, возвращает ошибку
 // не заполняются поля ID
+// func (e *Expression) Parse(expr string, t entities.Timings) error {
 func (e *Expression) Parse(expr string, t entities.Timings) error {
 	e.UserTask = expr
-	e.Times = t
 	// получаем корректные символы выражения
 	symbols, err := Parse(expr)
 	if err != nil {

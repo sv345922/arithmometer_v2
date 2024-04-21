@@ -17,3 +17,5 @@ const DefaultTimings = 1
 const GRPCPort = "5000"
 
 const Host = "localhost"
+
+const SecretString = "secret"

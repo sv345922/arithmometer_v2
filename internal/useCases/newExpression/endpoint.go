@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 )
@@ -21,15 +22,21 @@ func NewExpression(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.Res
 			w.Write([]byte("требуется метод POST"))
 			return
 		}
+		// Получаем имя пользователя
+		//user := r.Header["X-Username"][0]
+		user, err := strconv.ParseUint(r.Header["X-Username"][0], 10, 64)
+		if err != nil {
+			log.Printf("Error parsing user id: %v", err)
+		}
 		// Читаем тело запроса, в котором записано выражение и тайминги операций
 		var newClientExpression NewExpr
-		err := json.NewDecoder(r.Body).Decode(&newClientExpression)
+		err = json.NewDecoder(r.Body).Decode(&newClientExpression)
 		defer r.Body.Close()
 		if err != nil {
 			log.Println("ошибка POST запроса")
 			return
 		}
-		newExpression, status, err := ProcessExpression(ctx, ws, &newClientExpression)
+		newExpression, status, err := ProcessExpression(ctx, ws, &newClientExpression, user)
 		w.WriteHeader(status)
 		if err != nil {
 			log.Println(err)

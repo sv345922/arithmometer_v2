@@ -1,6 +1,7 @@
 package getResult
 
 import (
+	"context"
 	"fmt"
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 	"log"
@@ -9,7 +10,7 @@ import (
 )
 
 // Обрабатывает запросы клиента о проверке результата вычислений
-func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
+func GetResult(ctx context.Context, ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// Проверить метод
@@ -20,12 +21,14 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 		}
 		// Читаем id из параметров запроса
 		id := r.URL.Query().Get("id")
-
+		user, err := strconv.ParseUint(r.Header["X-Username"][0], 10, 64)
+		if err != nil {
+			log.Printf("Error parsing user id: %v", err)
+		}
 		// при пустом ID возвращать все выражения (пользователя)
 		if id == "" {
-			// TODO пока нет USERS используется userID=0
 			ws.Mu.Lock()
-			result, err := GetExpressions(0, ws.Expressions)
+			result, err := GetExpressions(user, ws.Expressions)
 			ws.Mu.Unlock()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -36,21 +39,27 @@ func GetResult(ws *wSpace.WorkingSpace) func(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		// TODO реализовать проверку пользователя и его выражений
-
 		// преобразуем id в число
 		idInt, _ := strconv.ParseUint(id, 10, 64)
 		// Поиск выражения в списке выражений
-		log.Printf("Выражени %d запрошено клиентом", idInt)
+		log.Printf("Выражение %d запрошено клиентом", idInt)
 		ws.Mu.RLock()
 		expression, ok := ws.Expressions[idInt]
-		ws.Mu.RUnlock()
+
+		// Проверка на наличие выражения с таким ID
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("id not found"))
 			return
 		}
+		// и совпадение с ID пользователя
+		if expression.UserId != user {
+			w.WriteHeader(http.StatusNotAcceptable)
+			w.Write([]byte("id for user not found"))
+			return
+		}
 
+		ws.Mu.RUnlock()
 		w.WriteHeader(http.StatusOK)
 		switch expression.Status {
 		case "done":

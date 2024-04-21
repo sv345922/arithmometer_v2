@@ -9,6 +9,7 @@ import (
 	"github.com/sv345922/arithmometer_v2/internal/entities"
 	"github.com/sv345922/arithmometer_v2/internal/useCases/newExpression"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -40,7 +41,21 @@ func SendNewExpression(exprString string, timing int) (string, bool) {
 	}
 	data, _ := json.Marshal(expression) //ошибку пропускаем
 	r := bytes.NewReader(data)
-	resp, err := http.Post(url, "application/json", r)
+
+	// отправка запроса Post
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, r)
+	if err != nil {
+		log.Println(err)
+		return "", false
+	}
+	token := ""
+	req.Header = http.Header{
+		"Content-Type":  {"application/json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", token)},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", false
 	}
@@ -59,7 +74,20 @@ func GetResult(id string) (string, string, error) {
 	errTotal := errors.New("ошибка получения результата")
 	// Создать запрос
 	url := "http://127.0.0.1:" + configs.Port + "/getresult" + "?id=" + id
-	resp, err := http.Get(url)
+
+	// Отправка запроса Get
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", "", errTotal
+	}
+	token := ""
+	req.Header = http.Header{
+		"Content-Type":  {"application/json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", token)},
+	}
+	resp, err := client.Do(req)
+	//resp, err := http.Get(url)
 	if err != nil {
 		return "", "", err
 	}

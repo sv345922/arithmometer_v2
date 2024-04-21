@@ -6,15 +6,16 @@ import (
 )
 
 // Возвращает json массив байт выражений, у которых соответсвует userId
-func GetExpressions(userId uint64, expessions map[uint64]*entities.Expression) ([]byte, error) {
+func GetExpressions(userId uint64, expressions map[uint64]*entities.Expression) ([]byte, error) {
 	// Получаем id выражений (ключи)
-	exprIds := make([]uint64, 0, len(expessions))
-	for id := range expessions {
+	exprIds := make([]uint64, 0, len(expressions))
+	for id := range expressions {
 		exprIds = append(exprIds, id)
 	}
 	resultExpressions := make(map[uint64]*entities.Expression)
 	for _, id := range exprIds {
-		if expression, ok := expessions[id]; ok && expression.UserId == userId {
+		// Проверка на существование выражения и соответсвие пользователю
+		if expression, ok := expressions[id]; ok && expression.UserId == userId {
 			resultExpressions[id] = expression
 		}
 	}

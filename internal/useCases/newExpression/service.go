@@ -14,9 +14,11 @@ import (
 var t = configs.DefaultTimings
 
 // Преобразует тип *parser.Expression в *entities.Expression
-func TransformParseExpression(expression *parser.Expression) *entities.Expression {
+func TransformParseExpression(expression *parser.Expression, user uint64) *entities.Expression {
+
 	return &entities.Expression{
 		Id:         expression.Id,
+		UserId:     user,
 		UserTask:   expression.UserTask,
 		ResultExpr: expression.ResultExpr,
 		Status:     expression.Status,
@@ -50,7 +52,8 @@ func setTimingsWhileZero(n *NewExpr) {
 
 func ProcessExpression(ctx context.Context,
 	ws *wSpace.WorkingSpace,
-	newClientExpression *NewExpr) (newExpression *parser.Expression, status int, err error) {
+	newClientExpression *NewExpr,
+	user uint64) (newExpression *parser.Expression, status int, err error) {
 	status = http.StatusOK
 
 	//Если тайминги не передаются, тогда они ставятся по умолчанию
@@ -103,7 +106,7 @@ func ProcessExpression(ctx context.Context,
 		return nil, status, fmt.Errorf("expression does not accepted")
 	}
 	// Добавляем в Expressions
-	newExpression.Id, err = ws.AddToExpressions(ctx, tx, TransformParseExpression(newExpression))
+	newExpression.Id, err = ws.AddToExpressions(ctx, tx, TransformParseExpression(newExpression, user))
 	if err != nil {
 		log.Printf("add to expressions failed: %v", err)
 		status = http.StatusInternalServerError

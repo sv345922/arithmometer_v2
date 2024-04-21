@@ -1,5 +1,8 @@
 POST http://localhost:8000/newexpression HTTP/1.1
 content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTM1NzY5MDksImlhdCI6MTcxMzU1ODkwOSwibmFtZSI6ItCa0L7Qu9GPIiwibmJmIjoxNzEzNTU4OTA5fQ.-QQCPzSg9fOyr6ZKgNZgwZqhpSOTIP9ciyxtoRsKSP4
+
+
 
 {
     "expression": "1+1",

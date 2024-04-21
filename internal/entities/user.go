@@ -6,3 +6,8 @@ type User struct {
 	Password    string   `json:"password"`
 	Expressions []uint64 `json:"expressions"`
 }
+
+type UserData struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}

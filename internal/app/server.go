@@ -3,6 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/authorization"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/loginUser"
+	"github.com/sv345922/arithmometer_v2/internal/useCases/registration"
 	"log"
 	"net/http"
 	"os"
@@ -11,8 +14,6 @@ import (
 	"github.com/sv345922/arithmometer_v2/internal/configs"
 	"github.com/sv345922/arithmometer_v2/internal/grps/grpcServer"
 	"github.com/sv345922/arithmometer_v2/internal/useCases/getResult"
-	"github.com/sv345922/arithmometer_v2/internal/useCases/getTask"
-	"github.com/sv345922/arithmometer_v2/internal/useCases/giveAnswer"
 	"github.com/sv345922/arithmometer_v2/internal/useCases/newExpression"
 	"github.com/sv345922/arithmometer_v2/internal/wSpace"
 )
@@ -36,18 +37,27 @@ func New(ctx context.Context, ws *wSpace.WorkingSpace) (*App, error) {
 	app.ws = ws
 	app.ctx = ctx
 
+	//middleware := authorization.Authorization
+	middleware := authorization.FakeAuthorization
+
 	mux := http.NewServeMux()
 	// Дать ответ клиенту о результатах вычисления выражений
-	mux.HandleFunc("/getresult", getResult.GetResult(ws)) // context?
+	mux.HandleFunc("/getresult", middleware(ctx, ws.DB, getResult.GetResult(ctx, ws))) //
 
 	// Получение нового выражения от клиента
-	mux.HandleFunc("/newexpression", newExpression.NewExpression(ctx, ws))
+	mux.HandleFunc("/newexpression", middleware(ctx, ws.DB, newExpression.NewExpression(ctx, ws)))
+
+	// Регистрация нового пользователя
+	mux.HandleFunc("/registration", registration.Registration(ctx, ws))
+
+	// Аутентификация пользоватля
+	mux.HandleFunc("/login", loginUser.Login(ctx, ws))
 
 	// Дать задачу вычислителю // не используется
-	mux.HandleFunc("/gettask", getTask.GetTask(ctx, ws))
+	// mux.HandleFunc("/gettask", getTask.GetTask(ctx, ws))
 
 	// Получить ответ от вычислителя // не используется
-	mux.HandleFunc("/giveanswer", giveAnswer.GiveAnswer(ctx, ws))
+	// mux.HandleFunc("/giveanswer", giveAnswer.GiveAnswer(ctx, ws))
 
 	app.httpServer = &http.Server{
 		Handler:      mux,

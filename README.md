@@ -161,3 +161,6 @@ go build ./cmd/orch/
 ```bash
 go build ./cmd/calculator/
 ```
+
+
+[Первая версия арифмометра](https://github.com/sv345922/arithmometer)
